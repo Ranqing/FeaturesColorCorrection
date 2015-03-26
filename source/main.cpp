@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 	showFeatures(im2, sfmatchPt2, cv::Scalar(0,0,255), sfn2);
 	showFeatures(segmat2, sfmatchPt2, cv::Scalar(0,0,255), segsfn2 );
 	cout << endl;
-
+	
 	//将匹配分配到对应的区域，存储匹配的下标
 	vector<vector<int>> sfmatchTable(regionum2);
 	computeMatchTable(sfmatchPt2, seglabels2, width, sfmatchTable, "");
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	fout << regionum2 << endl;
-	
+		
 	//统计无匹配区域数目，至少一个匹配区域数目，至少三个匹配区域数目
 	int sfzerocnt = 0, sfonecnt = 0, sfthreecnt = 0;	
 	for (int i = 0; i < regionum2; ++i)
@@ -217,11 +217,13 @@ int main(int argc, char *argv[])
 		cv::cvtColor(msk, graymsk, CV_BGR2GRAY);
 		cv::threshold(graymsk, binarymsk, 125, 255, CV_THRESH_BINARY);
 
-		/*string resfn = folder + "regions_" + argv[3] + "/region_" + type2string<int>(i) + "_" + argv[3] + ".jpg";
+		/*保存分割后的每个区域
+		string resfn = folder + "regions_" + argv[3] + "/region_" + type2string<int>(i) + "_" + argv[3] + ".jpg";
 		Mat reim2 ;
 		im2.copyTo(reim2, binarymsk);
 		imwrite(resfn, reim2);
-		continue;*/
+		continue;
+		*/
 		
 		int pixelcnt = countNonZero(binarymsk);
 		int matchcnt = sfmatchTable[i].size();
@@ -264,14 +266,12 @@ int main(int argc, char *argv[])
 #endif		
 	}
 
-	/*cout << "save regions done." << endl;
-	return 1;*/
-	
 	cout << "sift matches: " << sfzerocnt << " regions have no matches." << endl;
 	cout << "sift matches: " << sfonecnt  << " regions have less one matches." << endl;
 	cout << "sift matches: " << sfthreecnt << " regions have less three matches." << endl;
-
-	//target image的像素类别表， 每个region所包含的像素坐标 
+	cout << "save matches in each regions done." << endl;
+	
+	//区域像素表: 每个区域内的像素 
 	vector<vector<Point2f>> pixelTable2(regionum2);
 	for(int i = 0; i < seglabels2.size(); ++i)
 	{
@@ -333,47 +333,60 @@ int main(int argc, char *argv[])
 	}
 	cout << endl << matchcnt << " matches in " << idx << " th region." << endl;
 	
-	/************************求透视变换********************************/
 
+	string savefn;    //保存结果文件
+	fstream sfout;    //保存结果所用文件流
+	
+	/************************求透视变换********************************/
+#define PERSPECTIVE_TRANSFORM
+#ifdef  PERSPECTIVE_TRANSFORM
 	cout << endl << "perspective transform: " << endl;
 
 	Mat persmtx  = findHomography(repts2vec, repts1vec, RANSAC);   // repts2vec: srcpoints,  repts1vec: dstpoints
 	cout << "perspective matrix: " << endl;
 	cout << persmtx  << endl;
 
+	string persfolder = folder + "test_perspective_" + type2string<int>(idx);
+
 #define RQ_TESTIFY
-#ifdef RQ_TESTIFY
+#ifdef  RQ_TESTIFY
+	savefn = "perspective_matrix_68.txt";
+	sfout.open(savefn, ios::out);
+	sfout << persmtx << endl;
+	sfout.close();
+
 	cout << "test perspective matrix is right or not." << endl;
 	vector<Point2f> pers_repts1vec(0);
 	perspectiveTransform(repts2vec, pers_repts1vec, persmtx);
-	
-	string perssfn = "repts1_transformby_repts2.txt";
-	fstream persfout (perssfn, ios::out);
-	persfout << pers_repts1vec.size() << endl;
+
+	savefn = "repts1_transformby_repts2.txt";
+	sfout.open(savefn, ios::out);
+	sfout << pers_repts1vec.size() << endl;
 	for (int i = 0; i < pers_repts1vec.size() ; ++i)
 	{
-		persfout << pers_repts1vec[i].x << ' ' << pers_repts1vec[i].y << endl;
+		sfout << pers_repts1vec[i].x << ' ' << pers_repts1vec[i].y << endl;
 	}
-	persfout.close();
+	sfout.close();
 
-	perssfn = "test_pers_sift_matches_68.jpg";
-	showMatches(im1, im2, pers_repts1vec, repts2vec, perssfn );
+	savefn = "test_pers_sift_matches_68.jpg";
+	showMatches(im1, im2, pers_repts1vec, repts2vec, savefn );
 	cout << "check test_pers_sift_matches_68.jpg" << endl;
 #endif
-	
+
 	//pixelPts2通过透视变换得到的新的点
 
 	cout << "apply perspective transformation matrix to pixels in " << idx << "th region." << endl;
 	vector<Point2f> pers_pixelpts1vec(0);    
 	cv::perspectiveTransform(pixelpts2vec, pers_pixelpts1vec, persmtx);   // pixelpts1vec = affinemtx * pixelpts2vec
 
-	fstream perstfout("pixelspt1_transformby_pixelspt2.txt", ios::out);
-	perstfout << pers_pixelpts1vec.size() << endl;
+	savefn = "pixelspt1_transformby_pixelspt2.txt";
+	sfout.open(savefn, ios::out);
+	sfout << pers_pixelpts1vec.size() << endl;
 	for (int i = 0; i < pers_pixelpts1vec.size(); ++i)
 	{
-		perstfout << pers_pixelpts1vec[i].x << ' ' << pers_pixelpts1vec[i].y << endl;
+		sfout << pers_pixelpts1vec[i].x << ' ' << pers_pixelpts1vec[i].y << endl;
 	}
-	perstfout.close();
+	sfout.close();
 
 	//由pers_pixelpts1vec求解新的mask
 	Mat pers_remsk1(height, width, CV_8UC1, cv::Scalar(0));
@@ -390,102 +403,114 @@ int main(int argc, char *argv[])
 		pers_remsk1.at<uchar>(y,x) = 255;
 	}
 
-	imshow("pers mask", pers_remsk1);
+	imshow("perspective mask", pers_remsk1);
 	waitKey(0);
-	destroyWindow("pers mask");
+	destroyWindow("perspective mask");
 	string persmsksfn = "perspective_mask_68_view1.jpg";
 	imwrite(persmsksfn, pers_remsk1);
-	
+
+
 	//得到对应的source image中的区域
 	Mat pers_reim1 ;
 	im1.copyTo(pers_reim1, pers_remsk1);
 
-	perssfn = folder + "perspective_region_" + type2string<int>(idx) + "_" + argv[2] + ".jpg";
-	imwrite(perssfn, pers_reim1);
+	savefn = folder + "perspective_region_" + type2string<int>(idx) + "_" + argv[2] + ".jpg";
+	imwrite(savefn, pers_reim1);
 
-	string perslctsfn = folder + "perspective_lct_region_68_view5E.jpg";
-	RegionColorTransfer(im1, im2, pers_remsk1, binary_remsk2, perslctsfn);
-	
+	savefn = folder + "perspective_lct_region_68_view5E.jpg";
+	RegionColorTransfer(im1, im2, pers_remsk1, binary_remsk2, savefn);
+
 	cout << "done. " << endl;
-	return 1;
-	
+#endif	
 
 	/************************求仿射变换********************************/	
+#define AFFINE_TRANSFORM
+#ifdef  AFFINE_TRANSFORM
 	cout << endl << "affine transform: " << endl;
 	Mat affinemtx  =  estimateRigidTransform(repts2vec, repts1vec, true);  //求解的变换只限制于旋转，平移，缩放的组合
 	cout << "affinemtx: " << affinemtx << endl;
 
-//#define RQ_TESTIFY
-#ifdef RQ_TESTIFY
-	cout << endl << "testify affine matrix is right or not." << endl;
-	vector<Point2f> testPts1(0), testPts2(matchcnt);
-	copy(repts2vec.begin(), repts2vec.end(), testPts2.begin());
-	transform(testPts2, testPts1, affinemtx);
+#define RQ_TESTIFY
+#ifdef  RQ_TESTIFY
+	savefn = "affine_matrix_68.txt";
+	sfout.open(savefn, ios::out);
+	sfout << affinemtx << endl;
+	sfout.close();
 
-	fstream tfout("repts1_transformby_repts2.txt", ios::out);
-	tfout << matchcnt << endl;
-	for (int i = 0; i < matchcnt; ++i)
+	cout << "test affine matrix is right or not." << endl;
+	
+	vector<Point2f> affine_repts1vec(0);
+	transform(repts2vec, affine_repts1vec, affinemtx);
+
+	savefn = "repts1_transformby_repts2.txt";
+	sfout.open(savefn, ios::out);
+	sfout << affine_repts1vec.size() << endl;
+	for (int i = 0; i < affine_repts1vec.size() ; ++i)
 	{
-		Point2f tpt1 = testPts1[i];
-		tfout << tpt1.x << ' ' << tpt1.y << endl;
+		sfout << affine_repts1vec[i].x << ' ' << affine_repts1vec[i].y << endl;
 	}
-	tfout.close();
-	showMatches(im1, im2, testPts1, repts2vec, "test_sift_matches_68.jpg");
-	cout << "check test_sift_matches_68.jpg" << endl;
+	sfout.close();
 
-	tfout.open("affinemtx_68.txt", ios::out);
-	tfout << affinemtx << endl;
-	tfout.close();
+	savefn = "test_affine_sift_matches_68.jpg";
+	showMatches(im1, im2, affine_repts1vec, repts2vec, savefn );
+	cout << "check test_affine_sift_matches_68.jpg" << endl;
+	
+	savefn = "affine_matrix_68.txt";
+	sfout.open(savefn, ios::out);
+	sfout << affinemtx << endl;
+	sfout.close();
 #endif
 
-	
 	//pixelPts2通过仿射变换得到的新的点
-
-	cout << "apply affine transformation matrix to pixels in " << idx << "th region." << endl;
-	vector<Point2f> pixelpts1vec(0);    
-	cv::transform(pixelpts2vec, pixelpts1vec, affinemtx);   // pixelpts1vec = affinemtx * pixelpts2vec
-
-	tfout.open("pixelspt1_transformby_pixelspt2.txt", ios::out);
-	tfout << pixelpts1vec.size() << endl;
-	for (int i = 0; i < pixelpts1vec.size(); ++i)
-	{
-		tfout << pixelpts1vec[i].x << ' ' << pixelpts1vec[i].y << endl;
-	}
-	tfout.close();
 	
-	//由pixelpts1vec求解新的mask
-	Mat affine_remsk1(height, width, CV_8UC1, cv::Scalar(0));
-	for (int i = 0; i < pixelpts1vec.size(); ++i)
+	cout << "apply affine transformation matrix to pixels in " << idx << "th region." << endl;
+	vector<Point2f> aff_pixelpts1vec(0);    
+	cv::transform(pixelpts2vec, aff_pixelpts1vec, affinemtx);   // pixelpts1vec = affinemtx * pixelpts2vec // pixelpts1vec = affinemtx * pixelpts2vec
+
+	savefn = "pixelspt1_transformby_pixelspt2.txt";
+	sfout.open(savefn, ios::out);
+	sfout << aff_pixelpts1vec.size() << endl;
+	for (int i = 0; i < aff_pixelpts1vec.size(); ++i)
 	{
-		int x = pixelpts1vec[i].x;
-		int y = pixelpts1vec[i].y;
+		sfout << aff_pixelpts1vec[i].x << ' ' << aff_pixelpts1vec[i].y << endl;
+	}
+	sfout.close();
+
+	//由aff_pixelpts1vec求解新的mask
+	Mat aff_remsk1(height, width, CV_8UC1, cv::Scalar(0));
+	for (int i = 0; i < aff_pixelpts1vec.size(); ++i)
+	{
+		int x = aff_pixelpts1vec[i].x;
+		int y = aff_pixelpts1vec[i].y;
 
 		if (x>=width || x<0 || y>=height || y<0)
 		{
 			continue;
 		}
 
-		affine_remsk1.at<uchar>(y,x) = 255;
+		aff_remsk1.at<uchar>(y,x) = 255;
 	}
 
-	imshow("affine mask", affine_remsk1);
+	imshow("affine mask", aff_remsk1);
 	waitKey(0);
 	destroyWindow("affine mask");
-	string msksfn = "affine_mask_68_view1.jpg";
-	imwrite(msksfn, affine_remsk1);
 	
+	savefn = "affine_mask_68_view1.jpg";
+	imwrite(savefn, aff_remsk1);
+
+
 	//得到对应的source image中的区域
-	Mat affine_reim1 ;
-	im1.copyTo(affine_reim1, affine_remsk1);
-	
-	string affinesfn = folder + "affine_region_" + type2string<int>(idx) + "_" + argv[2] + ".jpg";
-	imwrite(affinesfn, affine_reim1);
+	Mat aff_reim1 ;
+	im1.copyTo(aff_reim1, aff_remsk1);
 
-	//保存原本在target image中的区域
-	
-	string lctsfn = folder + "lct_region_68_" + argv[3] + ".jpg";
-	RegionColorTransfer(im1, im2, affine_remsk1, binary_remsk2, lctsfn);
+	savefn = folder + "affine_region_" + type2string<int>(idx) + "_" + argv[2] + ".jpg";
+	imwrite(savefn, aff_reim1);
 
-	cout << "\n\tdone" << endl;
+	savefn = folder + "affine_lct_region_68_view5E.jpg";
+	RegionColorTransfer(im1, im2, aff_remsk1, binary_remsk2, savefn);
+
+	cout << "done. " << endl;
+#endif
+	
 	return 1;
 }
