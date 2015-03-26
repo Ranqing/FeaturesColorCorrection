@@ -285,11 +285,22 @@ int main(int argc, char *argv[])
 	//所有大于3个匹配的区域进行对应区域的计算
 
 	//测试用第68个区域-人像区域
-
-	int idx = 68;
+	int idx = 730;
 	vector<Point2f> cor_pixels1(0);   //correspond pixels in image1 
-	Mat cor_mask1;                    //correspond mask in image1
-	testTransform(idx, im1, im2, pixelTable2, sfmatchTable, sfmatchPt1, sfmatchPt2, cor_pixels1, cor_mask1);	
+	Mat cor_mask1; 
+	testTransform(idx, im1, im2, pixelTable2, sfmatchTable, sfmatchPt1, sfmatchPt2, cor_pixels1, cor_mask1 );
+
+	//for (int i = 0; i < regionum2; ++i)
+	//{
+	//	if (sfmatchTable[i].size() >= 4)
+	//	{
+	//		int idx = i;
+	//		vector<Point2f> cor_pixels1(0);   //correspond pixels in image1 
+	//		Mat cor_mask1;                    //correspond mask in image1
+	//		testTransform(idx, im1, im2, pixelTable2, sfmatchTable, sfmatchPt1, sfmatchPt2, cor_pixels1, cor_mask1);
+	//	}
+	//}
+		
 
 	cout << " done." << endl;
 	

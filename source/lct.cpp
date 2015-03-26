@@ -79,9 +79,9 @@ void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, string lctsfn
 	
 	Mat lctim2;
 	cvtColor(lab_lctim2, lctim2, CV_Lab2BGR);
-	imshow("lct_im2", lctim2);
+	/*imshow("lct_im2", lctim2);
 	waitKey(0);
-	destroyWindow("lct_im2");
+	destroyWindow("lct_im2");*/
 
 	if (lctsfn != "")
 	{
@@ -163,9 +163,9 @@ void CIMLocalColorTransfer(Mat labim1, Mat labim2, vector<Scalar> means1, vector
 		}
 	}
 
-	imshow("lab", lab_lctim2);
+	/*imshow("lab", lab_lctim2);
 	waitKey(0);
-	destroyWindow("lab");
+	destroyWindow("lab");*/
 	cvtColor(lab_lctim2, lctim2, CV_Lab2BGR);
 }
 

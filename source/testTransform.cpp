@@ -28,6 +28,8 @@ void maskFromPixels(vector<Point2f> validpixels, int h, int w, Mat& out_mask)
 void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable2, vector<vector<int>> sfmatchTable, vector<Point2f> allFeatures1, vector<Point2f> allFeatures2,
 				vector<Point2f>& out_repixels1, Mat& out_remask1)
 {
+	string folder = "output/";
+
 	cout << "use " << idx << "-th region to test." << endl;
 
 	int height = im1.rows;
@@ -59,7 +61,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	string savefn;    
 	fstream sfout;
 
-#define PERSPECTIVE_TRANSFORM
+//#define PERSPECTIVE_TRANSFORM
 #ifdef  PERSPECTIVE_TRANSFORM
 
 	cout << endl << "perspective transform: " << endl;
@@ -67,7 +69,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	cout << "perspective matrix: " << endl;
 	cout << persmtx  << endl;
 
-	savefn = "perspective_matrix_" + type2string<int>(idx) + ".txt";     // perspective transform matrix
+	savefn = folder + "perspective_matrix_" + type2string<int>(idx) + ".txt";     // perspective transform matrix
 	sfout.open(savefn, ios::out);
 	sfout << persmtx << endl;
 	sfout.close();
@@ -76,7 +78,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	vector<Point2f> pers_repts1vec(0);
 	perspectiveTransform(repts2vec, pers_repts1vec, persmtx);
 
-	savefn = "perspective_features1_" + type2string<int>(idx) + ".txt";    // features2 transformed by perspective matrix
+	savefn = folder + "perspective_features1_" + type2string<int>(idx) + ".txt";    // features2 transformed by perspective matrix
 	sfout.open(savefn, ios::out);
 	sfout << pers_repts1vec.size() << endl;
 	for (int i = 0; i < pers_repts1vec.size() ; ++i)
@@ -86,7 +88,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	sfout.close();
 	cout << "save " << savefn << endl;
 
-	savefn = "perspective_sift_matches_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "perspective_sift_matches_" + type2string<int>(idx) + ".jpg";
 	showMatches(im1, im2, pers_repts1vec, repts2vec, savefn );
 	cout << "save " << savefn << endl;
 
@@ -95,7 +97,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	vector<Point2f> pers_pixelpts1vec(0);    
 	cv::perspectiveTransform(pixelpts2vec, pers_pixelpts1vec, persmtx); 
 
-	savefn = "perspective_pixelspts1_" + type2string<int>(idx) + ".txt";    // pixels2 transform by perspective matrix
+	savefn = folder + "perspective_pixelspts1_" + type2string<int>(idx) + ".txt";    // pixels2 transform by perspective matrix
 	sfout.open(savefn, ios::out);
 	sfout << pers_pixelpts1vec.size() << endl;
 	for (int i = 0; i < pers_pixelpts1vec.size(); ++i)
@@ -108,15 +110,15 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	copy(pers_pixelpts1vec.begin(), pers_pixelpts1vec.end(), out_repixels1.begin());
 	maskFromPixels(out_repixels1, height, width, out_remask1);
 
-	savefn = "perspective_mask_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "perspective_mask_" + type2string<int>(idx) + ".jpg";
 	imwrite(savefn, out_remask1);
-	savefn = "perspective_region_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "perspective_region_" + type2string<int>(idx) + ".jpg";
 	Mat pers_reim1;
 	im1.copyTo(pers_reim1, out_remask1);
 	imwrite(savefn, pers_reim1);
 
 	//local color transfer
-	savefn = "perspective_lct_region_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "perspective_lct_region_" + type2string<int>(idx) + ".jpg";
 	RegionColorTransfer(im1, im2, out_remask1, remask2, savefn);
 	cout << "perspective transform test done." << endl;
 
@@ -130,7 +132,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	Mat affinemtx  =  estimateRigidTransform(repts2vec, repts1vec, true);  //求解的变换只限制于旋转，平移，缩放的组合
 	cout << "affinemtx: " << affinemtx << endl;
 
-	savefn = "affine_matrix_" + type2string<int>(idx) + ".txt";     // perspective transform matrix
+	savefn = folder + "affine_matrix_" + type2string<int>(idx) + ".txt";     // perspective transform matrix
 	sfout.open(savefn, ios::out);
 	sfout << affinemtx << endl;
 	sfout.close();
@@ -139,7 +141,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	vector<Point2f> affine_repts1vec(0);
 	transform(repts2vec, affine_repts1vec, affinemtx);
 
-	savefn = "affine_features1_" + type2string<int>(idx) + ".txt";    // features2 transformed by perspective matrix
+	savefn = folder + "affine_features1_" + type2string<int>(idx) + ".txt";    // features2 transformed by perspective matrix
 	sfout.open(savefn, ios::out);
 	sfout << affine_repts1vec.size() << endl;
 	for (int i = 0; i < affine_repts1vec.size() ; ++i)
@@ -149,7 +151,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	sfout.close();
 	cout << "save " << savefn << endl;
 
-	savefn = "affine_sift_matches_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "affine_sift_matches_" + type2string<int>(idx) + ".jpg";
 	showMatches(im1, im2, affine_repts1vec, repts2vec, savefn );
 	cout << "save " << savefn << endl;
 
@@ -158,7 +160,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	vector<Point2f> aff_pixelpts1vec(0);    
 	cv::transform(pixelpts2vec, aff_pixelpts1vec, affinemtx);   // pixelpts1vec = affinemtx * pixelpts2vec // pixelpts1vec = affinemtx * pixelpts2vec
 
-	savefn = "affine_pixelspts1_" + type2string<int>(idx) + ".txt";    // pixels2 transform by perspective matrix
+	savefn = folder + "affine_pixelspts1_" + type2string<int>(idx) + ".txt";    // pixels2 transform by perspective matrix
 	sfout.open(savefn, ios::out);
 	sfout << aff_pixelpts1vec.size() << endl;
 	for (int i = 0; i < aff_pixelpts1vec.size(); ++i)
@@ -172,15 +174,15 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	copy(aff_pixelpts1vec.begin(), aff_pixelpts1vec.end(), out_repixels1.begin());
 	maskFromPixels(out_repixels1, height, width, out_remask1);
 
-	savefn = "affine_mask_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "affine_mask_" + type2string<int>(idx) + ".jpg";
 	imwrite(savefn, out_remask1);
-	savefn = "affine_region_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "affine_region_" + type2string<int>(idx) + ".jpg";
 	Mat aff_reim1;
 	im1.copyTo(aff_reim1, out_remask1);
 	imwrite(savefn, aff_reim1);
 
 	//local color transfer
-	savefn = "affine_lct_region_" + type2string<int>(idx) + ".jpg";
+	savefn = folder + "affine_lct_region_" + type2string<int>(idx) + ".jpg";
 	RegionColorTransfer(im1, im2, out_remask1, remask2, savefn);
 	cout << "affine transform test done." << endl;
 
