@@ -1,2 +1,2 @@
 Written by Ranqing to correct color difference between two images
-Here 2015.03.26
+Here coming Git and GitHub at 2015.03.26
