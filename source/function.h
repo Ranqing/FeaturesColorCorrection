@@ -17,9 +17,13 @@ void DrawContoursAroundSegments(vector<uchar>&	segmentedImage,	const int width, 
 void DoMeanShiftSegmentation(vector<uchar> inputimg, const int width, const int height, const int ch, const int sigmaS, const float sigmaR, const int minregion, 
 	vector<uchar>& segimg, vector<uchar>& segbound, vector<int>& seglabels, int& regionum);
 
+//generate a mask from valid pixels
+void maskFromPixels(vector<Point2f> validpixels, int h, int w, Mat& out_mask);
 
-//perspective transform
-void perspectivePoints(vector<Point2f> srcpts, Mat persmtx,  vector<Point2f>& dstpts);
+// test the idea of Transform is work or not
+void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable2, vector<vector<int>> sfmatchTable, vector<Point2f> allFeatures1, vector<Point2f> allFeatures2,
+	vector<Point2f>& out_repixels1, Mat& out_remask1);
+
 
 //local color transfer
 void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, string lctsfn);
