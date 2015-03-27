@@ -45,6 +45,58 @@ void saveLabels(vector<int> labels, int w, int h, string lbfn)
 	fout.close();
 }
 
+void readPixelTable(string fn, vector<vector<Point2f>>& pixeltable)
+{
+	fstream fin(fn, ios::in);
+	if (fin.is_open() == NULL)
+	{
+		cout << "failed to open " << fn << endl;
+		return ;
+	}
+
+	int nsize, tsize;
+	
+	//区域数目
+	fin >> nsize;	
+	pixeltable.resize(nsize);
+	
+	for (int i = 0; i < nsize; ++i)
+	{
+		//每个区域内有多少个像素点
+		fin >> tsize;
+		pixeltable[i].resize(tsize);
+
+		for (int j = 0; j < tsize; ++j)
+		{
+			fin >> pixeltable[i][j].x >> pixeltable[i][j].y;
+		}		
+	}
+	fin.close();
+}
+
+void savePixelTable(vector<vector<Point2f>> pixeltable, string fn)
+{
+
+	fstream fout(fn, ios::out);
+	if (fout.is_open() == NULL)
+	{
+		cout << "failed to open " << fn << endl;
+		return ;
+	}
+
+	fout << pixeltable.size() << endl;
+	for (int i = 0; i < pixeltable.size(); ++ i)
+	{
+		fout << pixeltable[i].size() << ' ' ;
+		for (int j = 0; j < pixeltable[i].size(); ++ j)
+		{
+			fout << pixeltable[i][j].x << ' ' << pixeltable[i][j].y << ' ';
+		}
+		fout << endl;
+	}
+	fout.close();
+}
+
 void readFeatures(string ffn, vector<Point2f>& features)
 {	
 	fstream fin(ffn.c_str(), ios::in);

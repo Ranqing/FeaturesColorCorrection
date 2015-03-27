@@ -4,6 +4,11 @@
 void readLabels(string lbfn, int& w, int& h, int& regionum, vector<int>& labels);
 void saveLabels(vector<int> labels, int w, int h, string lbfn);
 
+//for test
+void savePixelTable(vector<vector<Point2f>> pixeltable, string fn);
+void readPixelTable(string fn, vector<vector<Point2f>>& pixeltable);
+
+
 void readFeatures(string ffn, vector<Point2f>& features);
 void readSiftFeatures(string sffn, vector<Point2f>& features);
 void showFeatures(Mat im, vector<Point2f>& features, cv::Scalar color, string sfn);
@@ -27,6 +32,8 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 
 //local color transfer
 void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, string lctsfn);
+
+
 
 
 

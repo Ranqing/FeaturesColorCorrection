@@ -61,7 +61,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	string savefn;    
 	fstream sfout;
 
-//#define PERSPECTIVE_TRANSFORM
+#define PERSPECTIVE_TRANSFORM
 #ifdef  PERSPECTIVE_TRANSFORM
 
 	cout << endl << "perspective transform: " << endl;
@@ -118,14 +118,14 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	imwrite(savefn, pers_reim1);
 
 	//local color transfer
-	savefn = folder + "perspective_lct_region_" + type2string<int>(idx) + ".jpg";
-	RegionColorTransfer(im1, im2, out_remask1, remask2, savefn);
-	cout << "perspective transform test done." << endl;
+	//savefn = folder + "perspective_lct_region_" + type2string<int>(idx) + ".jpg";
+	//RegionColorTransfer(im1, im2, out_remask1, remask2, savefn);
+	//cout << "perspective transform test done." << endl;
 
 #endif
 
 
-#define AFFINE_TRANSFORM
+//#define AFFINE_TRANSFORM
 #ifdef  AFFINE_TRANSFORM
 
 	cout << endl << "affine transform: " << endl;
