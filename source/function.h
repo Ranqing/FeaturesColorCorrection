@@ -31,7 +31,11 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 
 
 //local color transfer
-void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, string lctsfn);
+void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2,  Mat& new_reim2, string lctsfn);
+
+void RegionColorTransfer(Mat im1, Mat im2, vector<Point2f> repts1, vector<Point2f> repts2, Mat& new_reim2, string lctsfn );
+void RegionColorTransfer(Mat im1, Mat im2, vector<Point2f> repts2, Scalar mean1, Scalar mean2, double lfactor, double afactor, double bfactor, Mat& new_reim2, string lctsfn);
+
 
 
 

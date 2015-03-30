@@ -26,7 +26,7 @@ void computeMeanSdv(Mat labim, vector<vector<Point2i>> pxltable, int regionum, v
 	}
 }
 
-void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, string lctsfn)
+void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, Mat& new_reim2, string lctsfn)
 {
 	int w = im1.cols;
 	int h = im1.rows;
@@ -50,9 +50,16 @@ void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, string lctsfn
 	meanStdDev(lab_im1, mean1, stddv1, remsk1);
 	meanStdDev(lab_im2, mean2, stddv2, remsk2);
 
+	cout << "1: " << mean1 << " " << stddv1 << endl;
+	cout << "2: " << mean2 << " " << stddv2 << endl;
+
 	double Lfactor = stddv1.val[0] / stddv2.val[0];
 	double Afactor = stddv1.val[1] / stddv2.val[1];
 	double Bfactor = stddv1.val[2] / stddv2.val[2];
+
+	cout << "Lfactor = " << Lfactor << endl;
+	cout << "Afactor = " << Afactor << endl;
+	cout << "Bfactor = " << Bfactor << endl;
 
 	Mat lab_lctim2 = lab_im2.clone();    //Mat lab_lctim2(h, w, CV_8UC3, Scalar(0,0,0));	
 	int cnt = 0;
@@ -77,17 +84,12 @@ void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, string lctsfn
 	}
 	cout << endl << "region color transfer. " << cnt << " pixels." << endl;
 	
-	Mat lctim2;
-	cvtColor(lab_lctim2, lctim2, CV_Lab2BGR);
-	/*imshow("lct_im2", lctim2);
-	waitKey(0);
-	destroyWindow("lct_im2");*/
+	cvtColor(lab_lctim2, new_reim2, CV_Lab2BGR);
 
 	if (lctsfn != "")
 	{
-		imwrite(lctsfn, lctim2);
-	}
-	
+		imwrite(lctsfn, new_reim2);
+	}	
 }
 
 //算法本身的计算weight 不一定 是对的
@@ -164,8 +166,8 @@ void CIMLocalColorTransfer(Mat labim1, Mat labim2, vector<Scalar> means1, vector
 	}
 
 	/*imshow("lab", lab_lctim2);
-	waitKey(0);
-	destroyWindow("lab");*/
+	  waitKey(0);
+	  destroyWindow("lab");*/
 	cvtColor(lab_lctim2, lctim2, CV_Lab2BGR);
 }
 
