@@ -35,6 +35,9 @@ void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vect
 //local color transfer
 void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, vector<vector<Point2f>>& pixelTable2, string folder, string imfn);
 
+//no match region use global 
+void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, vector<vector<Point2f>>& pixelTable2, string folder, string imfn);
+
 //single region color transfer
 void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2,  Mat& new_reim2, string lctsfn);
 

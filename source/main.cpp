@@ -286,6 +286,7 @@ int main(int argc, char *argv[])
 	cout << endl << "/*******************weighted local color transfer******************/" << endl;
 	folder = "output/";
 	LocalColorTransfer(im1, im2, pixelTable1, pixelTable2, folder, argv[3]);
+	LocalColorTransfer2(im1, im2, pixelTable1, pixelTable2, folder, argv[3]);
 	
 	cout << "done" << endl;
 	return 1;
