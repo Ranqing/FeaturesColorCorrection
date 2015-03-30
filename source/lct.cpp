@@ -39,11 +39,6 @@ void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, Mat& new_reim
 	cvtColor(reim1, lab_im1, CV_BGR2Lab);
 	cvtColor(reim2, lab_im2, CV_BGR2Lab);
 
-	/*imshow("lab_reim1", lab_reim1 );
-	imshow("lab_reim2", lab_reim2 );
-	waitKey(0);
-	destroyAllWindows();*/
-
 	Scalar mean1, stddv1;
 	Scalar mean2, stddv2;
 
@@ -92,84 +87,181 @@ void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, Mat& new_reim
 	}	
 }
 
-//算法本身的计算weight 不一定 是对的
-void CIMLocalColorTransfer(Mat labim1, Mat labim2, vector<Scalar> means1, vector<Scalar> sdvs1, vector<Scalar> means2, vector<Scalar> sdvs2,  Mat& lctim2)
-{
-	int w = labim1.cols;
-	int h = labim1.rows;
-	int regionum = means1.size();
+void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, vector<vector<Point2f>>& pixelTable2, string folder, string imfn)
+{  
+	int height = im1.rows;
+	int width  = im1.cols;
 
-	vector<double> Lfactors(0), Afactors(0), Bfactors(0);
-	for (int i = 0; i < regionum; ++i)
+	vector<int> matchedRegionsIdx(0);								// 匹配区域的index	
+	vector<Scalar> means1(0), means2(0), stddvs1(0), stddvs2(0);    // 匹配区域的均值和标准差
+	vector<double> Lfactors(0), Afactors(0), Bfactors(0);           // 匹配区域的标准差比值
+
+	Mat labim1, labim2;
+	cvtColor(im1, labim1, CV_BGR2Lab);
+	cvtColor(im2, labim2, CV_BGR2Lab);
+
+	for (int i = 0; i < pixelTable1.size(); ++i)
 	{
-		Scalar tsdv = sdvs2[i];   //target
-		Scalar ssdv = sdvs1[i];   //source
+		if (pixelTable1[i].size() == 0)
+			continue;
 
-		double lfactor = (ssdv.val[0] * 1.0) / (tsdv.val[0]);
-		double afactor = (ssdv.val[1] * 1.0) / (tsdv.val[1]);
-		double bfactor = (ssdv.val[2] * 1.0) / (tsdv.val[2]);
+		int idx = i;
+		matchedRegionsIdx.push_back(idx);
+					
+		Mat remsk1, remsk2;
+		maskFromPixels(pixelTable1[idx], height, width, remsk1);
+		maskFromPixels(pixelTable2[idx], height, width, remsk2);
+
+		//第i个求得匹配的区域的均值和标准差
+		Scalar mean1, stddv1, mean2, stddv2;
+						
+		meanStdDev(labim1, mean1, stddv1, remsk1);
+		meanStdDev(labim2, mean2, stddv2, remsk2);
+				
+		means1.push_back(mean1);	
+		stddvs1.push_back(stddv1);
+		means2.push_back(mean2);
+		stddvs2.push_back(stddv2);
+
+		double lfactor = stddv1.val[0] / stddv2.val[0];
+		double afactor = stddv1.val[1] / stddv2.val[1];
+		double bfactor = stddv1.val[2] / stddv2.val[2];
 
 		Lfactors.push_back(lfactor);
 		Afactors.push_back(afactor);
 		Bfactors.push_back(bfactor);
 	}
 
-	cout << "factors has been calculated." << endl;
-
-	double alpha2 = 20.0 * 20.0;
-
-	Mat lab_lctim2(h, w, CV_8UC3, Scalar(0,0,0));
-	for (int y = 0; y < h; ++ y)
+	//保存每个匹配区域的means, stddvs
+	string fn1 = folder + "means_stddvs_1.txt";
+	string fn2 = folder + "means_stddvs_2.txt";
+	string factorfn = folder + "lab_factors.txt";
+			
+	fstream fout1(fn1, ios::out); fout1 << matchedRegionsIdx.size() << endl;
+	fstream fout2(fn2, ios::out); fout2 << matchedRegionsIdx.size() << endl;
+	fstream ffout(factorfn, ios::out);  ffout << matchedRegionsIdx.size() << endl;
+	for (int i = 0; i < matchedRegionsIdx.size(); ++i)
 	{
-		for (int x = 0; x < w; ++ x)
+		int idx = matchedRegionsIdx[i];	
+		
+		fout1 << idx << ": " << means1[i] << " " << stddvs1[i] << endl;
+		fout2 << idx << ": " << means2[i] << " " << stddvs2[i] << endl;
+		ffout << idx << ": " << Lfactors[i] << " " << Afactors[i] << " " << Bfactors[i] << endl;
+	}
+	fout1.close();
+	fout2.close();
+
+
+	//进行颜色变换
+	Mat newim2(height, width, CV_8UC3, cv::Scalar(0,0,0));
+	Mat lab_newim2(height, width, CV_8UC3, cv::Scalar(0,0,0));
+	string savefn;
+
+//#define WEIGHTED_LCT
+#ifdef  WEIGHTED_LCT
+	
+	double alpha = 20;
+	double alpha2 = alpha * alpha;
+		
+	for (int y = 0; y < height; ++ y)
+	{
+		for (int x = 0; x < width; ++ x)
 		{
-			Vec3b color = labim2.at<Vec3b>(y,x);
-
+			Vec3b color = labim2.at<Vec3b>(y,x);     //原本的颜色
+					 
 			double weightLsum = 0.0, weightAsum = 0.0, weightBsum = 0.0;
-			Scalar colorsum(0.0,0.0,0.0);
-
-			//所有区域进行加权平均
-			for (int i = 0; i < regionum; ++i)
-			{	
-				//e(-3*x*x)
-				double weightL = exp(-3 * (color.val[0] - means2[i].val[0]) * (color.val[0] - means2[i].val[0]) );
-				double weightA = exp(-3 * (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]) );
-				double weightB = exp(-3 * (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]) );	
-
+			Scalar colorsum (0.0, 0.0, 0.0);
+		
+			//所有区域的加权平均
+		
+			for (int i = 0; i < matchedRegionsIdx.size(); ++i)
+			{				
 				//e(-(x*x)/2*(alpha*alpha))
-				//float weightL = exp(-0.5 *  (color.val[0] - means2[i].val[0]) * (color.val[0] - means2[i].val[0]) / alpha2 );
-				//float weightA = exp(-0.5 *  (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]) / alpha2);
-				//float weightB = exp(-0.5 *  (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]) / alpha2);
-
-				double newcolorL = weightL *( Lfactors[i] * (color[0] - means2[i].val[0]) + means1[i].val[0] );
-				double newcolorA = weightA *( Afactors[i] * (color[1] - means2[i].val[1]) + means1[i].val[1] );
-				double newcolorB = weightB *( Bfactors[i] * (color[2] - means2[i].val[2]) + means1[i].val[2] );
-
+				double weightL = exp(-0.5 *  (color.val[0] - means2[i].val[0]) * (color.val[0] - means2[i].val[0]) / alpha2 );
+				double weightA = exp(-0.5 *  (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]) / alpha2 );
+				double weightB = exp(-0.5 *  (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]) / alpha2 );
+		
 				weightLsum += weightL;
 				weightAsum += weightA;
 				weightBsum += weightB;
-
+									
+				double newcolorL = weightL * ( Lfactors[i] * (color[0] - means2[i].val[0]) + means1[i].val[0] );
+				double newcolorA = weightA * ( Afactors[i] * (color[1] - means2[i].val[1]) + means1[i].val[1] );
+				double newcolorB = weightB * ( Bfactors[i] * (color[2] - means2[i].val[2]) + means1[i].val[2] );
+		
 				colorsum.val[0] += newcolorL;
 				colorsum.val[1] += newcolorA;
 				colorsum.val[2] += newcolorB;
 			}
-
-
-			//类型转换
+		
 			if (weightLsum != 0)
-				lab_lctim2.at<Vec3b>(y,x)[0] = (int)min(max(0.0,colorsum.val[0]/weightLsum), 255.0);
+				lab_newim2.at<Vec3b>(y,x)[0] = (int)min(max(0.0,colorsum.val[0]/weightLsum), 255.0);
 			if (weightAsum != 0)
-				lab_lctim2.at<Vec3b>(y,x)[1] = (int)min(max(0.0,colorsum.val[1]/weightAsum), 255.0);
+				lab_newim2.at<Vec3b>(y,x)[1] = (int)min(max(0.0,colorsum.val[1]/weightAsum), 255.0);
 			if (weightBsum != 0)
-				lab_lctim2.at<Vec3b>(y,x)[2] = (int)min(max(0.0,colorsum.val[2]/weightBsum), 255.0);
+				lab_newim2.at<Vec3b>(y,x)[2] = (int)min(max(0.0,colorsum.val[2]/weightBsum), 255.0);				
+		}
+	}
+		
+	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
+		
+	savefn = folder + "lct_weighted_" + imfn + ".jpg";
+	cout << "save " << savefn << endl;
+	imshow("newim2", newim2);
+	waitKey(0);
+	destroyWindow("newim2");
+	imwrite(savefn, newim2);	
+		
+#else 
+
+	for (int i = 0; i < matchedRegionsIdx.size(); ++i)
+	{
+		int idx = matchedRegionsIdx[i];
+
+		Scalar mean1 = means1[i];
+		Scalar mean2 = means2[i];
+		Scalar stddv1 = stddvs1[i];
+		Scalar stddv2 = stddvs2[i];
+
+		Mat remsk1 , remsk2;
+		maskFromPixels(pixelTable1[idx], height, width, remsk1);
+		maskFromPixels(pixelTable2[idx], height, width, remsk2);
+
+		double lfactor = Lfactors[i];
+		double afactor = Afactors[i];
+		double bfactor = Bfactors[i];		
+
+		for (int j = 0; j < pixelTable2[idx].size(); ++j)
+		{
+			Point2f pt = pixelTable2[idx][j];
+			int y = pt.y;
+			int x = pt.x;
+
+			Vec3b color = labim2.at<Vec3b>(y,x);
+			double newcolorL = lfactor * (color[0] - mean2.val[0]) + mean1.val[0];
+			double newcolorA = afactor * (color[1] - mean2.val[1]) + mean1.val[1];
+			double newcolorB = bfactor * (color[2] - mean2.val[2]) + mean1.val[2];
+
+			lab_newim2.at<Vec3b>(y,x)[0] = (int)min(max(0.0,newcolorL), 255.0);
+			lab_newim2.at<Vec3b>(y,x)[1] = (int)min(max(0.0,newcolorA), 255.0);
+			lab_newim2.at<Vec3b>(y,x)[2] = (int)min(max(0.0,newcolorB), 255.0);
 		}
 	}
 
-	/*imshow("lab", lab_lctim2);
-	  waitKey(0);
-	  destroyWindow("lab");*/
-	cvtColor(lab_lctim2, lctim2, CV_Lab2BGR);
+	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
+	savefn = folder + "lct_" + imfn + ".jpg";
+	cout << "save " << savefn << endl;
+	imshow("newim2", newim2);
+	waitKey(0);
+	destroyWindow("newim2");
+	imwrite(savefn, newim2);
+
+#endif
+
+	cout << endl << "/*******************weighted local color transfer done******************/" << endl;
 }
+
+
 
 //为每个区域计算一张CIM图像： 像素数目大于1000才进行计算， pixeltable用来进行判断
 //只计算Luminance通道的CIM

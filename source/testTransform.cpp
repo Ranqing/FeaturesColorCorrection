@@ -188,6 +188,4 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	cout << "affine transform test done." << endl;
 
 #endif
-
-
 }

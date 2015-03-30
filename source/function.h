@@ -29,12 +29,15 @@ void maskFromPixels(vector<Point2f> validpixels, int h, int w, Mat& out_mask);
 void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable2, vector<vector<int>> sfmatchTable, vector<Point2f> allFeatures1, vector<Point2f> allFeatures2,
 	vector<Point2f>& out_repixels1, Mat& out_remask1);
 
+//regions correspondence
+void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vector<Point2f>& sfmatchPts1, vector<Point2f>& sfmatchPts2, vector<vector<Point2f>>& pixelTable2, vector<vector<Point2f>>& out_pixelTable1);
 
 //local color transfer
+void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, vector<vector<Point2f>>& pixelTable2, string folder, string imfn);
+
+//single region color transfer
 void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2,  Mat& new_reim2, string lctsfn);
 
-void RegionColorTransfer(Mat im1, Mat im2, vector<Point2f> repts1, vector<Point2f> repts2, Mat& new_reim2, string lctsfn );
-void RegionColorTransfer(Mat im1, Mat im2, vector<Point2f> repts2, Scalar mean1, Scalar mean2, double lfactor, double afactor, double bfactor, Mat& new_reim2, string lctsfn);
 
 
 

@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
 
 #define  RQ_DEBUG
 #ifdef   RQ_DEBUG
+	//直接读入分割结果
 	string segfn = folder + "seg_" + argv[3] + ".jpg";    //save segmentation image
 	string lbfn = folder + "label_" + argv[3] + ".txt";   //save segmentation labels
 	
@@ -116,6 +117,7 @@ int main(int argc, char *argv[])
 	cout << "regionum = " << regionum2 << endl;
 
 #else
+	//进行meanshift分割
 	DoMeanShiftSegmentation(imvec2, width, height, ch, sigmaS, sigmaR, minR, segim2, segbound2, seglabels2, regionum2);
 	DrawContoursAroundSegments(segim2, width, height, ch,  cv::Scalar(255,255,255));
 
@@ -145,28 +147,8 @@ int main(int argc, char *argv[])
 	saveLabels(seglabels2, width, height, lbfn);
 #endif
 
-
-	// 读入SIFT特征点
-	// 读入SIFT特征点匹配，只保留有匹配的特征点
-	// 统计每个区域的像素数目，每个区域的匹配数目
-	//cout << "\n\tfeatures" << endl;
-	
-	//3.sift 
-	/*vector <Point2f> sift1(0), sift2(0);
-	string sftfn1 = folder + "SIFT/features_" + argv[2] + ".txt";
-	string sftfn2 = folder + "SIFT/features_" + argv[3] + ".txt";
-	string sfn1 = folder + "Sift_" + argv[2] + ".jpg";
-	string sfn2 = folder + "Sift_" + argv[3] + ".jpg";
-	string segsfn2 = folder + "Sift_seg_" + argv[3] + ".jpg";
-
-	readSiftFeatures(sftfn1, sift1);
-	readSiftFeatures(sftfn2, sift2);
-	showFeatures(im1, sift1, cv::Scalar(122,25,25), sfn1 );
-	showFeatures(im2, sift2, cv::Scalar(122,25,25), sfn2 );
-	showFeatures(segmat2, sift2, cv::Scalar(122,25,25), segsfn2);
-	cout << endl;*/
-	
-	//读入匹配
+	//读入SIFT匹配
+	//显示区域内的匹配点
 	cout << "\n\tmatches\n" << endl;
 
 	vector<Point2f> sfmatchPt1(0), sfmatchPt2(0);
@@ -186,9 +168,7 @@ int main(int argc, char *argv[])
 	//将匹配分配到对应的区域，存储匹配的下标
 	//compute match table
 	vector<vector<int>> sfmatchTable(regionum2);
-	computeMatchTable(sfmatchPt2, seglabels2, width, sfmatchTable, "");
-
-	string mskfolder = folder + "masks_" + argv[3] + "/";   //区域mask所在文件夹
+	computeMatchTable(sfmatchPt2, seglabels2, width, sfmatchTable, "");	
 	
 	string smcntfn = folder + "regions_sift_matches.txt";     //保存每个区域的像素数目, 匹配点数目, 匹配点下标
 	fstream fout(smcntfn , ios::out);
@@ -199,8 +179,11 @@ int main(int argc, char *argv[])
 	}
 	fout << regionum2 << endl;
 		
-	//统计无匹配区域数目，至少一个匹配区域数目，至少三个匹配区域数目
-	int sfzerocnt = 0, sfonecnt = 0, sfthreecnt = 0;	
+	//统计无匹配区域数目
+	string mskfolder = folder + "masks_" + argv[3] + "/";   //区域mask所在文件夹
+	int sfzerocnt = 0;                    //区域内无匹配
+	int sfonecnt  = 0;                    //区域内有至少一个匹配
+	int sfthreecnt = 0;	                  //区域内有至少三个匹配
 	for (int i = 0; i < regionum2; ++i)
 	{
 		string mskfn = mskfolder + "mask_" +  type2string<int>(i) + ".jpg";
@@ -296,233 +279,14 @@ int main(int argc, char *argv[])
 	
 	cout << endl << "/******************find regions correspondence******************/" << endl;
 
-	vector<vector<Point2f>> pixelTable1(0);							// 与pixelpixelTable2对应。。没有对应性的区域为空
-	vector<int> matchedRegionsIdx(0);								// 匹配区域的index	
-	vector<Scalar> means1(0), means2(0), stddvs1(0), stddvs2(0);    // 匹配区域的均值和标准差
-
-	for (int i = 0; i < regionum2; ++i)
-	{
-		if (sfmatchTable[i].size() < 4)
-		{
-			pixelTable1.push_back(vector<Point2f>());
-			continue;                   //can't compute a transform
-		}
-
-		int idx = i;
-		int matchcnt = sfmatchTable[idx].size();      //区域内的匹配数目
-
-		vector<Point2f> repts1(0), repts2(0);  
-		for (int j = 0; j < matchcnt; ++j)
-		{
-			int tidx = sfmatchTable[idx][j];
-			repts1.push_back(sfmatchPt1[tidx]);
-			repts2.push_back(sfmatchPt2[tidx]);
-		}
+	vector<vector<Point2f>> pixelTable1(0);
+	FindRegionMapping(im1, im2, sfmatchTable, sfmatchPt1, sfmatchPt2, pixelTable2, pixelTable1);
 		
-		cout << endl << idx << "th-region: perspective transform" << endl;
-		Mat persmtx  = findHomography(repts2, repts1, RANSAC);   
-		cout << "perspective matrix: " << endl;
-		cout << persmtx  << endl;
 
-		cout << "apply perspective transformation matrix to pixels in " << idx << "th region." << endl; 
-		vector<Point2f> pers_pixelpts1(0);
-		cv::perspectiveTransform(pixelTable2[idx], pers_pixelpts1, persmtx);
-		pixelTable1.push_back(pers_pixelpts1);
-
-		Mat remsk1, remsk2;
-		maskFromPixels(pixelTable1[idx], height, width, remsk1);
-		maskFromPixels(pixelTable2[idx], height, width, remsk2);
-
-		Mat reim1, reim2;
-		im1.copyTo(reim1, remsk1);
-		im2.copyTo(reim2, remsk2);
-		Mat canvas(height, 2*width, CV_8UC3);
-		reim1.copyTo(canvas(Rect(0,0,width,height)));
-		reim2.copyTo(canvas(Rect(width,0,width,height)));
-
-		string savefn = "correspond_region_" + type2string<int>(idx) + ".jpg";
-		imwrite(savefn, canvas);
-
-		//第i个求得匹配的区域的标签为idx
-		matchedRegionsIdx.push_back(idx);
-
-		//第i个求得匹配的区域的均值和标准差
-		Scalar mean1, stddv1, mean2, stddv2;
-		
-		meanStdDev(labim1, mean1, stddv1, remsk1);
-		meanStdDev(labim2, mean2, stddv2, remsk2);
-
-		means1.push_back(mean1);	
-		stddvs1.push_back(stddv1);
-		means2.push_back(mean2);
-		stddvs2.push_back(stddv2);
-	}
-	cout << endl << "/*******************find regions correspondence done******************/" << endl;
-	cout << matchedRegionsIdx.size()  << " matched region." << endl;
-
-	//保存每个匹配区域的means, stddvs
-	string fn1 = folder + "means_stddvs_1.txt";
-	string fn2 = folder + "means_stddvs_2.txt";
-	
-	fstream fout1(fn1, ios::out); fout1 << matchedRegionsIdx.size() << endl;
-	fstream fout2(fn2, ios::out); fout2 << matchedRegionsIdx.size() << endl;
-	for (int i = 0; i < matchedRegionsIdx.size(); ++i)
-	{
-		int idx = matchedRegionsIdx[i];	
-
-		fout1 << idx << ": " << means1[i] << " " << stddvs1[i] << endl;
-		fout2 << idx << ": " << means2[i] << " " << stddvs2[i] << endl;
-	}
-	fout1.close();
-	fout2.close();
-	
-	//保存对应性结果
-	//savePixelTable(pixelTable1, "pixelTable1.txt");
-	//savePixelTable(pixelTable2, "pixelTable2.txt");
-
-	//将pixelTable1的结果转换成为labels, 并保存
-	//vector<int> seglabels1(height * width, -1);    
-	//for (int i = 0; i < pixelTable1.size(); ++i)
-	//{
-		//for (int j = 0; j < pixelTable1[i].size(); ++j)
-		//{
-			//Point2f tpt = pixelTable1[i][j];
-			//int y = min(max((int)tpt.y, 0), height-1);
-			//int x = min(max((int)tpt.x, 0), width -1);
-			//int idx = y * width + x;
-			//seglabels1[idx] = i;
-		//}
-	//}	
-	//saveLabels(seglabels1, width, height, "labels1.txt");
-	//cout << "pixelTable convert to labels done." << endl;
-	//cout << "save labels1.txt" << endl;
-	//return 1;
-
-	
 	cout << endl << "/*******************weighted local color transfer******************/" << endl;
-
-	Mat newim2(height, width, CV_8UC3, cv::Scalar(0,0,0));
-	Mat lab_newim2(height, width, CV_8UC3, cv::Scalar(0,0,0));
-
-#define WEIGHTED_LCT
-#ifdef  WEIGHTED_LCT
-
-	double alpha = 30;
-	double alpha2 = alpha * alpha;
-
-	vector<double> Lfactors(0), Afactors(0), Bfactors(0);
-	for (int i = 0; i < matchedRegionsIdx.size(); ++i)
-	{
-		Scalar mean1 = means1[i];
-		Scalar mean2 = means2[i];
-		Scalar stddv1 = stddvs1[i];
-		Scalar stddv2 = stddvs2[i];
-
-		double lfactor = stddv1.val[0] / stddv2.val[0];
-		double afactor = stddv1.val[1] / stddv2.val[1];
-		double bfactor = stddv1.val[2] / stddv2.val[2];
-
-		Lfactors.push_back(lfactor);
-		Afactors.push_back(afactor);
-		Bfactors.push_back(bfactor);
-	}
-
-	for (int y = 0; y < height; ++ y)
-	{
-		for (int x = 0; x < width; ++ x)
-		{
-			Vec3b color = labim2.at<Vec3b>(y,x);     //原本的颜色
-			 
-			double weightLsum = 0.0, weightAsum = 0.0, weightBsum = 0.0;
-			Scalar colorsum (0.0, 0.0, 0.0);
-
-			//所有区域的加权平均
-
-			for (int i = 0; i < matchedRegionsIdx.size(); ++i)
-			{				
-				//e(-(x*x)/2*(alpha*alpha))
-				double weightL = exp(-0.5 *  (color.val[0] - means2[i].val[0]) * (color.val[0] - means2[i].val[0]) / alpha2 );
-				double weightA = exp(-0.5 *  (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]) / alpha2 );
-				double weightB = exp(-0.5 *  (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]) / alpha2 );
-
-				weightLsum += weightL;
-				weightAsum += weightA;
-				weightBsum += weightB;
-							
-				double newcolorL = weightL * ( Lfactors[i] * (color[0] - means2[i].val[0]) + means1[i].val[0] );
-				double newcolorA = weightA * ( Afactors[i] * (color[1] - means2[i].val[1]) + means1[i].val[1] );
-				double newcolorB = weightB * ( Bfactors[i] * (color[2] - means2[i].val[2]) + means1[i].val[2] );
-
-				colorsum.val[0] += newcolorL;
-				colorsum.val[1] += newcolorA;
-				colorsum.val[2] += newcolorB;
-			}
-
-			if (weightLsum != 0)
-				lab_newim2.at<Vec3b>(y,x)[0] = (int)min(max(0.0,colorsum.val[0]/weightLsum), 255.0);
-			if (weightAsum != 0)
-				lab_newim2.at<Vec3b>(y,x)[1] = (int)min(max(0.0,colorsum.val[1]/weightAsum), 255.0);
-			if (weightBsum != 0)
-				lab_newim2.at<Vec3b>(y,x)[2] = (int)min(max(0.0,colorsum.val[2]/weightBsum), 255.0);				
-		}
-	}
-
-	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-
-	string savefn = folder + "lct_weighted_" + argv[3] + ".jpg";
-	cout << "save " << savefn << endl;
-	imshow("newim2", newim2);
-	waitKey(0);
-	destroyWindow("newim2");
-	imwrite(savefn, newim2);	
-
-#else 
-	for (int i = 0; i < matchedRegionsIdx.size(); ++i)
-	{
-		int idx = matchedRegionsIdx[i];
-
-		Scalar mean1 = means1[i];
-		Scalar mean2 = means2[i];
-		Scalar stddv1 = stddvs1[i];
-		Scalar stddv2 = stddvs2[i];
-
-		Mat remsk1 , remsk2;
-		maskFromPixels(pixelTable1[idx], height, width, remsk1);
-		maskFromPixels(pixelTable2[idx], height, width, remsk2);
-
-		double lfactor = stddv1.val[0] / stddv2.val[0];
-		double afactor = stddv1.val[1] / stddv2.val[1];
-		double bfactor = stddv1.val[2] / stddv2.val[2];
-
-
-		for (int j = 0; j < pixelTable2[idx].size(); ++j)
-		{
-			Point2f pt = pixelTable2[idx][j];
-			int y = pt.y;
-			int x = pt.x;
-
-			Vec3b color = labim2.at<Vec3b>(y,x);
-			double newcolorL = lfactor * (color[0] - mean2.val[0]) + mean1.val[0];
-			double newcolorA = afactor * (color[1] - mean2.val[1]) + mean1.val[1];
-			double newcolorB = bfactor * (color[2] - mean2.val[2]) + mean1.val[2];
-
-			lab_newim2.at<Vec3b>(y,x)[0] = (int)min(max(0.0,newcolorL), 255.0);
-			lab_newim2.at<Vec3b>(y,x)[1] = (int)min(max(0.0,newcolorA), 255.0);
-			lab_newim2.at<Vec3b>(y,x)[2] = (int)min(max(0.0,newcolorB), 255.0);
-		}
-	}
-
-	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-
-	string savefn = folder + "lct_" + argv[3] + ".jpg";
-	cout << "save " << savefn << endl;
-	imshow("newim2", newim2);
-	waitKey(0);
-	destroyWindow("newim2");
-	imwrite(savefn, newim2);	
-#endif
+	folder = "output/";
+	LocalColorTransfer(im1, im2, pixelTable1, pixelTable2, folder, argv[3]);
 	
-
-	cout << endl << "/*******************weighted local color transfer done******************/" << endl;
+	cout << "done" << endl;
 	return 1;
 }
