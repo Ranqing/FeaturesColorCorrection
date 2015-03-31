@@ -30,7 +30,7 @@ void testTransform(int idx, Mat im1, Mat im2, vector<vector<Point2f>> pixelTable
 	vector<Point2f>& out_repixels1, Mat& out_remask1);
 
 //regions correspondence
-void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vector<Point2f>& sfmatchPts1, vector<Point2f>& sfmatchPts2, vector<vector<Point2f>>& pixelTable2, vector<vector<Point2f>>& out_pixelTable1);
+void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vector<Point2f>& sfmatchPts1, vector<Point2f>& sfmatchPts2, vector<vector<Point2f>>& pixelTable2, vector<vector<Point2f>>& out_pixelTable1,string folder);
 
 //local color transfer
 void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, vector<vector<Point2f>>& pixelTable2, string folder, string imfn);

@@ -147,6 +147,29 @@ int main(int argc, char *argv[])
 	saveLabels(seglabels2, width, height, lbfn);
 #endif
 
+	//compute pixel table:  每个区域内有那些像素（二维点）
+	vector<vector<Point2f>> pixelTable2(regionum2);
+	for(int i = 0; i < seglabels2.size(); ++i)
+	{
+		Point2f pt(i%width, i/width);	
+		pixelTable2[seglabels2[i]].push_back(pt);
+	}
+
+	//保存每个区域的mask
+	//for (int i = 0; i < pixelTable2.size(); ++i)
+	//{
+	//	string mskfn = folder + "masks_" + argv[3] + "/mask_" +  type2string<int>(i) + ".jpg";
+	//	Mat msk;
+	//	maskFromPixels(pixelTable2[i], height, width, msk);
+	//	imwrite(mskfn, msk);
+	//
+	//	//保存分割后的每个区域
+	//	string resfn = folder + "regions_" + argv[3] + "/region_" + type2string<int>(i) + "_" + argv[3] + ".jpg";
+	//	Mat reim2 ;
+	//	im2.copyTo(reim2, msk);
+	//	imwrite(resfn, reim2);		
+	//}
+
 	//读入SIFT匹配
 	//显示区域内的匹配点
 	cout << "\n\tmatches\n" << endl;
@@ -196,14 +219,7 @@ int main(int argc, char *argv[])
 		Mat graymsk, binarymsk;
 		cv::cvtColor(msk, graymsk, CV_BGR2GRAY);
 		cv::threshold(graymsk, binarymsk, 125, 255, CV_THRESH_BINARY);
-
-		//保存分割后的每个区域
-		//string resfn = folder + "regions_" + argv[3] + "/region_" + type2string<int>(i) + "_" + argv[3] + ".jpg";
-		//Mat reim2 ;
-		//im2.copyTo(reim2, binarymsk);
-		//imwrite(resfn, reim2);
-		//continue;
-				
+							
 		int pixelcnt = countNonZero(binarymsk);
 		int matchcnt = sfmatchTable[i].size();
 		
@@ -250,15 +266,6 @@ int main(int argc, char *argv[])
 	cout << "sift matches: " << sfthreecnt << " regions have less three matches." << endl;
 	cout << "save matches in each regions done." << endl;
 
-	//compute pixel table:  每个区域内有那些像素（二维点）
-	vector<vector<Point2f>> pixelTable2(regionum2);
-	for(int i = 0; i < seglabels2.size(); ++i)
-	{
-		Point2f pt(i%width, i/width);	
-		pixelTable2[seglabels2[i]].push_back(pt);
-	}
-
-
 	//---------------------------------------------------------------------------------------------------------//
 	//--------------测试区域的透视变换以及颜色转移：用第68个区域-人像区域---------------------//
 	//包含每个区域的perspective mask, perspective region
@@ -278,13 +285,13 @@ int main(int argc, char *argv[])
 	meanStdDev(labim2, global_means2, global_stddvs2);
 	
 	cout << endl << "/******************find regions correspondence******************/" << endl;
+	
+	folder = "output_lab/";
 
-	vector<vector<Point2f>> pixelTable1(0);
-	FindRegionMapping(im1, im2, sfmatchTable, sfmatchPt1, sfmatchPt2, pixelTable2, pixelTable1);
-		
+	vector<vector<Point2f>> pixelTable1(0);	
+	FindRegionMapping(im1, im2, sfmatchTable, sfmatchPt1, sfmatchPt2, pixelTable2, pixelTable1, folder);		
 
 	cout << endl << "/*******************weighted local color transfer******************/" << endl;
-	folder = "output/";
 	LocalColorTransfer(im1, im2, pixelTable1, pixelTable2, folder, argv[3]);
 	LocalColorTransfer2(im1, im2, pixelTable1, pixelTable2, folder, argv[3]);
 	

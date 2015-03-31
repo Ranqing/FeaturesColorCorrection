@@ -87,6 +87,8 @@ void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2, Mat& new_reim
 	}	
 }
 
+#define WEIGHTED_LCT
+
 void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, vector<vector<Point2f>>& pixelTable2, string folder, string imfn)
 {  
 	int height = im1.rows;
@@ -157,7 +159,6 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 	Mat lab_newim2(height, width, CV_8UC3, cv::Scalar(0,0,0));
 	string savefn;
 
-//#define WEIGHTED_LCT
 #ifdef  WEIGHTED_LCT
 	
 	double alpha = 20;
@@ -315,7 +316,6 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 	Mat lab_newim2(height, width, CV_8UC3, cv::Scalar(0,0,0));
 	string savefn;
 
-#define WEIGHTED_LCT
 #ifdef  WEIGHTED_LCT
 	double alpha = 20;
 	double alpha2 = alpha * alpha;
@@ -368,7 +368,6 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 	waitKey(0);
 	destroyWindow("newim2");
 	imwrite(savefn, newim2);	
-	return ;
 #endif
 
 	for (int i = 0; i < regionum; ++i)

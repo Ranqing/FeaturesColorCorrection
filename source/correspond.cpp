@@ -2,7 +2,7 @@
 
 //利用有匹配的区域内的特征点求解出变换矩阵
 //变换矩阵应用到区域内所有像素,得到对应的区域内的所有像素点
-void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vector<Point2f>& sfmatchPts1, vector<Point2f>& sfmatchPts2, vector<vector<Point2f>>& pixelTable2, vector<vector<Point2f>>& out_pixelTable1)
+void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vector<Point2f>& sfmatchPts1, vector<Point2f>& sfmatchPts2, vector<vector<Point2f>>& pixelTable2, vector<vector<Point2f>>& out_pixelTable1, string folder)
 {
 	int width = im1.cols;
 	int height = im1.rows;
@@ -50,7 +50,7 @@ void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vect
 		reim1.copyTo(canvas(Rect(0,0,width,height)));
 		reim2.copyTo(canvas(Rect(width,0,width,height)));
 
-		string savefn = "output/correspond_region_" + type2string<int>(idx) + ".jpg";
+		string savefn = folder + "correspond_region_" + type2string<int>(idx) + ".jpg";
 		imwrite(savefn, canvas);
 
 		matchedcnt ++;
