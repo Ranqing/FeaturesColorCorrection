@@ -168,14 +168,15 @@ void showFeatures(Mat im, vector<Point2f>& features, cv::Scalar color, string sf
 	imwrite(sfn, tim);
 }
 
-
+//all matches files has the format of SIFT_Matches
 void readMatches(string mfn, vector<Point2f>& features1, vector<Point2f>& features2)
 {
-	fstream fin(mfn.c_str(), std::ios::in);
+	readSiftMatches(mfn, features1, features2);
+	/*fstream fin(mfn.c_str(), std::ios::in);
 	if (fin.is_open() == false)
 	{
-		cout << "failed to open " << mfn << std::endl;
-		return ;
+	cout << "failed to open " << mfn << std::endl;
+	return ;
 	}
 
 	features1.clear();
@@ -188,17 +189,17 @@ void readMatches(string mfn, vector<Point2f>& features1, vector<Point2f>& featur
 	fin >> matchnum;
 	for (int i = 0; i < matchnum; ++ i )
 	{
-		fin >> y >> sx >> tx >> ncc >> prior;
+	fin >> y >> sx >> tx >> ncc >> prior;
 
-		Point2f pt1(sx, y);
-		Point2f pt2(tx, y);
+	Point2f pt1(sx, y);
+	Point2f pt2(tx, y);
 
-		features1.push_back(pt1);
-		features2.push_back(pt2);
+	features1.push_back(pt1);
+	features2.push_back(pt2);
 	}
 	fin.close();
 
-	cout << "read matches from " << mfn << " done. " << matchnum << " matches." << endl;
+	cout << "read matches from " << mfn << " done. " << matchnum << " matches." << endl;*/
 }
 
 void readSiftMatches(string sfmfn, vector<Point2f>& features1, vector<Point2f>& features2)
@@ -210,8 +211,8 @@ void readSiftMatches(string sfmfn, vector<Point2f>& features1, vector<Point2f>& 
 		return ;
 	}
 
-	features1.clear();
-	features2.clear();
+//	features1.clear();
+//	features2.clear();
 
 	int matchnum;
 	float x1, y1, x2, y2;
