@@ -617,9 +617,14 @@ public:
 
   int GetRegions(int**, float**, int**);
   
-  //ranqing
+  //add by Ranqing
   //function added to simply get the labels and the number of label
   int GetLabels(int * lab);
+
+  //add by Ranqing
+  int  GetRegionsCnt();
+  void GetRegionsLabels(unsigned char *labels_out);
+  void GetRegionsDensitys(unsigned char *densitys_out );
 
 
   void SetSpeedThreshold(float);

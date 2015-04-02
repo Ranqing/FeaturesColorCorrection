@@ -93,3 +93,46 @@ void DoMeanShiftSegmentation(vector<uchar> inputimg, const int width, const int 
 	//4. 得到分块后区域数目
 	regionum = numlabels+1;   //包含标签为0的区域
 }
+
+/**
+ * @param src Image to segment
+ * @param labels		vector<int>   where the (int) labels will be written in
+ * @param segments	    vector<uchar> where the segmentation results will be written in
+ * @param regioncnt	    Number of different labels
+ */
+void DoMeanShiftSegmentation(const Mat& src, int sigmaS, float sigmaR, int minR, vector<uchar>& segments, vector<int>& labels, int& regioncnt)
+{
+	msImageProcessor proc;
+	proc.DefineImage(src.data, (src.channels() == 3 ? COLOR : GRAYSCALE), src.rows, src.cols);
+	proc.Segment(sigmaS,sigmaR, minR, MED_SPEEDUP);//HIGH_SPEEDUP, MED_SPEEDUP, NO_SPEEDUP; high: set speedupThreshold, otherwise the algorithm uses it uninitialized!
+
+	regioncnt = proc.GetRegionsCnt();
+
+	//标签结果
+	Mat labels_dst = cv::Mat(src.size(), CV_32SC1);
+	proc.GetRegionsLabels(labels_dst.data);
+
+	//meanshift分割图像
+	Mat segment_dst = cv::Mat(src.size(), CV_8UC3);
+	proc.GetResults(segment_dst.data);	
+
+	//test
+	imshow("segmentation", segment_dst);
+	waitKey(0);
+	destroyWindow("segmentation");
+
+	int w = src.cols;
+	int h = src.rows;
+	labels.resize(w*h);
+	segments.resize(w*h*3);
+	for (int y = 0; y < h; ++ y)
+		for (int x = 0; x < w; ++x)
+		{
+			labels[y*w+x] = labels_dst.at<int>(y,x);
+			segments[(y*w+x)*3 + 0] = segment_dst.at<Vec3b>(y,x)[0];
+			segments[(y*w+x)*3 + 1] = segment_dst.at<Vec3b>(y,x)[1];
+			segments[(y*w+x)*3 + 2] = segment_dst.at<Vec3b>(y,x)[2];
+		}
+
+
+}

@@ -6,6 +6,7 @@
 #include "common.h"
 
 #define _PI 3.14159265358979323846
+#define NMAX 1500
 
 //pixels vector convert to mat
 template<typename PixelType> 

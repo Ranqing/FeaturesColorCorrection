@@ -5,29 +5,54 @@
 typedef unsigned char uchar;   ///实际在WinDef.h中 unsigned char也被typedef为BYTE
 typedef unsigned int uint; 
 
-
-void readAllMatches(string folder , vector<Point2f>& matchPts1, vector<Point2f>& matchPts2)
+void readAllMatches(string folder, vector<Point2f>& matchPts1, vector<Point2f>& matchPts2)
 {
 	string fn ;
 
-	matchPts1.clear();
-	matchPts2.clear();
+	vector<Point2f> mpts1(0), mpts2(0);
 
 	fn = folder + "matches_Harris.txt";
-	readMatches(fn, matchPts1, matchPts2);
+	readMatches(fn, mpts1, mpts2);
 
 	fn = folder + "matches_DoG.txt";
-	readMatches(fn, matchPts1, matchPts2);
+	readMatches(fn, mpts1, mpts2);
 
 	fn = folder + "matches_Sift.txt";
-	readMatches(fn, matchPts1, matchPts2);
+	readMatches(fn, mpts1, mpts2);
 
-	cout << "read all matches done."  << matchPts1.size() << endl;
+	/************************************************************************/
+	/* 1. 去掉Y值不等的匹配
+	/* 2. 去掉重复的匹配
+	/************************************************************************/
+
+	matchPts1.clear();
+	matchPts2.clear();	
+		
+	int matchcnt = mpts1.size();
+	bool times[NMAX][NMAX];
+	memset(times, 0, NMAX * NMAX* sizeof(bool));
+
+	cout << "read all matches done."  << matchcnt << endl;
+	for (int i = 0; i < matchcnt; ++i )
+	{
+		int sx = mpts1[i].x;
+		int sy = mpts1[i].y;
+		int dx = mpts2[i].x;
+		int dy = mpts2[i].y;
+
+		if (abs(sy - dy) > 10)
+			continue;
+
+		if (times[sx][sy] > 0)   //不会出现一对多的情况：其实难以保证
+			continue;
+
+		matchPts1.push_back(Point2f(sx, sy));
+		matchPts2.push_back(Point2f(dx, dy));
+	}
+	matchcnt = matchPts1.size();
+	cout << "after delete duplicate matches. " << matchcnt << endl;	
 }
 
-//pts: i - (x,y)  
-//labels: label((x,y)) = idx
-//如果sfn!= "", 将i存储到mctable[idx]中, 并保存到sfn中
 void computeMatchTable( vector<Point2f> pts, vector<int> labels, int step, vector<vector<int>>& mctable, string sfn)
 {
 	for (int i = 0; i < pts.size(); ++i)
@@ -107,9 +132,9 @@ int main(int argc, char *argv[])
 	//float sigmaR = 2*h;                            //color radius
 	//const int minR = 20;                           //min regions
 
-	float sigmaS = 7;
-	float sigmaR = 9;
-	const int minR = 500;
+	float sigmaS = 5;
+	float sigmaR = 10;
+	const int minR = 800;
 
 	//对target image进行分割
 	cout << "start mean-shift segmentation." << endl;
@@ -140,8 +165,8 @@ int main(int argc, char *argv[])
 	cout << "height = " << height << endl;
 	cout << "regionum = " << regionum2 << endl;
 #else
-	//进行meanshift分割
-	DoMeanShiftSegmentation(imvec2, width, height, ch, sigmaS, sigmaR, minR, segim2, segbound2, seglabels2, regionum2);
+	//进行mean-shift分割
+	DoMeanShiftSegmentation(im2, sigmaS, sigmaR, minR, segim2, seglabels2, regionum2);
 	DrawContoursAroundSegments(segim2, width, height, ch,  cv::Scalar(255,255,255));
 
 	cout << "mean-shift segmentation for target image done." ;
@@ -201,11 +226,6 @@ int main(int argc, char *argv[])
 	vector<Point2f> sfmatchPt1(0), sfmatchPt2(0);
 	readAllMatches(folder, sfmatchPt1, sfmatchPt2);
 
-	/*string sfmfn = folder + "SIFT/matches.txt";
-	string sfmsfn = folder + "Sift_matches.jpg";
-	readSiftMatches(sfmfn, sfmatchPt1, sfmatchPt2);
-	showMatches(im1, segmat2, sfmatchPt1, sfmatchPt2, sfmsfn);*/
-
 	string sfn1 = folder + "valid_" + argv[2] + ".jpg";
 	string sfn2 = folder + "valid_" + argv[3] + ".jpg";
 	string segsfn2 = folder + "valid_seg_" + argv[3] + ".jpg";
@@ -261,10 +281,10 @@ int main(int argc, char *argv[])
 
 		//显示保存每个区域内的匹配点
 #define SHOW_REGION
-#ifdef SHOW_REGION
-		Mat newim2(height, width, CV_8UC3) ;
+#ifdef  SHOW_REGION
+		Mat newim2 = Mat::zeros(height, width, CV_8UC3) ;
 		im2.copyTo(newim2, binarymsk);
-
+		
 		Mat canvas(height, width * 2, CV_8UC3);
 		im1.copyTo(canvas(Rect(0,0,width,height)));
 		newim2.copyTo(canvas(Rect(width,0,width,height)));

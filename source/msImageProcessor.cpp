@@ -1159,7 +1159,40 @@ int msImageProcessor::GetRegions(int **labels_out, float **modes_out, int **MPC_
 	return regionCount;
 }
 
+
+
 //ranqing
+int msImageProcessor::GetRegionsCnt()
+{
+	return regionCount;
+}
+
+void msImageProcessor::GetRegionsLabels(unsigned char *labels_out)
+{
+	//check to see if output has been defined for the given input image...
+	if(class_state.OUTPUT_DEFINED == false)
+	{
+		ErrorHandler("msImageProcessor", "GetRegionsLabels", "No result of the given input image.");
+		return ;
+	}
+
+
+	memcpy(labels_out, labels, L*sizeof(int));
+
+}
+
+void msImageProcessor::GetRegionsDensitys(unsigned char *densitys_out )
+{
+	//check to see if output has been defined for the given input image...
+	if(class_state.OUTPUT_DEFINED == false)
+	{
+		ErrorHandler("msImageProcessor", "GetRegionsDensitys", "No result of the given input image.");
+		return ;
+	}
+
+	memcpy(densitys_out, modePointCounts, regionCount*sizeof(int));
+}
+
 int msImageProcessor::GetLabels(int * lab)
 {
 	int i ;
@@ -1168,6 +1201,7 @@ int msImageProcessor::GetLabels(int * lab)
 
 	return regionCount;  //return number of labels
 }
+
 
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 /*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/

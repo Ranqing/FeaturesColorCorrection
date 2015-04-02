@@ -21,6 +21,7 @@ void showMatches(Mat im1, Mat im2, vector<Point2f>& pts1, vector<Point2f>& pts2,
 void DrawContoursAroundSegments(vector<uchar>&	segmentedImage,	const int width, const int height, const int ch, const Scalar color);
 void DoMeanShiftSegmentation(vector<uchar> inputimg, const int width, const int height, const int ch, const int sigmaS, const float sigmaR, const int minregion, 
 	vector<uchar>& segimg, vector<uchar>& segbound, vector<int>& seglabels, int& regionum);
+void DoMeanShiftSegmentation(const Mat& src, int sigmaS, float sigmaR, int minR, vector<uchar>& segments, vector<int>& labels, int& regioncnt);
 
 //generate a mask from valid pixels
 void maskFromPixels(vector<Point2f> validpixels, int h, int w, Mat& out_mask);
