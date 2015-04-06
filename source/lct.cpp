@@ -206,15 +206,15 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 		
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
 		
-	savefn = folder + "lct_weighted_" + imfn + ".jpg";
+	savefn = folder + "lct_weighted_" + imfn + ".jpg";   //local_weighted_view5E.jpg， 只考虑有匹配的区域进行加权平均（本文的思路）
 	cout << "save " << savefn << endl;
-	imshow("newim2", newim2);
+	/*imshow("newim2", newim2);
 	waitKey(0);
-	destroyWindow("newim2");
+	destroyWindow("newim2");*/
 	imwrite(savefn, newim2);	
-		
-#else 
-
+#endif
+	
+	lab_newim2 = Mat::zeros(height, width, CV_8UC3);
 	for (int i = 0; i < matchedRegionsIdx.size(); ++i)
 	{
 		int idx = matchedRegionsIdx[i];
@@ -244,19 +244,17 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 	}
 
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-	savefn = folder + "lct_" + imfn + ".jpg";
+	savefn = folder + "lct_" + imfn + ".jpg";      //lct_view5E.jpg:  有匹配的区域的一对一变换
 	cout << "save " << savefn << endl;
-	imshow("newim2", newim2);
+	/*imshow("newim2", newim2);
 	waitKey(0);
-	destroyWindow("newim2");
+	destroyWindow("newim2");*/
 	imwrite(savefn, newim2);
-
-#endif
-
+	
 	cout << endl << "/*******************weighted local color transfer done******************/" << endl;
 }
 
-
+//每个区域都有均值和标准差，无匹配区域使用global的值
 void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, vector<vector<Point2f>>& pixelTable2, string folder, string imfn)
 {
 	int width = im1.cols;
@@ -362,14 +360,15 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
 
-	savefn = folder + "lct_weighted_" + imfn + "_2.jpg";
+	savefn = folder + "lct_weighted_" + imfn + "_2.jpg";       //lct_weighted_view5E_2.jpg ：  所有区域的加权平均，无匹配区域使用global_means, global_stddvs 
 	cout << "save " << savefn << endl;
-	imshow("newim2", newim2);
+	/*imshow("newim2", newim2);
 	waitKey(0);
-	destroyWindow("newim2");
+	destroyWindow("newim2");*/
 	imwrite(savefn, newim2);	
 #endif
 
+	lab_newim2 = Mat::zeros(height, width, CV_8UC3);
 	for (int i = 0; i < regionum; ++i)
 	{
 		Scalar mean1 = means1[i];
@@ -397,11 +396,11 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 	}
 
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-	savefn = folder + "lct_" + imfn + "_2.jpg";
+	savefn = folder + "lct_" + imfn + "_2.jpg";           //lct_view5E_2.jpg ： 所有区域的一对一变换
 	cout << "save " << savefn << endl;
-	imshow("newim2", newim2);
+	/*imshow("newim2", newim2);
 	waitKey(0);
-	destroyWindow("newim2");
+	destroyWindow("newim2");*/
 	imwrite(savefn, newim2);
 }
 

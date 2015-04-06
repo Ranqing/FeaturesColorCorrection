@@ -74,8 +74,8 @@ void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vect
 
 	//保存pixelTable1
 	//保存pixelTable2
-	savePixelTable(out_pixelTable1, "output/pixelTable1.txt");
-	savePixelTable(pixelTable2, "output/pixelTable2.txt");
+	savePixelTable(out_pixelTable1, folder + "pixelTable1.txt");
+	savePixelTable(pixelTable2, folder + "pixelTable2.txt");
 
 	//将pixelTable1的结果转换为labels1
 	//保存labels1
@@ -89,7 +89,7 @@ void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vect
 			seglabels1[y * width + x] = i;
 		}
 	}	
-	saveLabels(seglabels1, width, height, "output/labels1.txt");
+	saveLabels(seglabels1, width, height, folder + "labels1.txt");
 	cout << "pixelTable convert to labels done." << endl;
 	cout << "save labels1.txt" << endl;
 

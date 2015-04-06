@@ -117,9 +117,9 @@ void DoMeanShiftSegmentation(const Mat& src, int sigmaS, float sigmaR, int minR,
 	proc.GetResults(segment_dst.data);	
 
 	//test
-	imshow("segmentation", segment_dst);
+	/*imshow("segmentation", segment_dst);
 	waitKey(0);
-	destroyWindow("segmentation");
+	destroyWindow("segmentation");*/
 
 	int w = src.cols;
 	int h = src.rows;
