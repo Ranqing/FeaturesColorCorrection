@@ -17,6 +17,10 @@ void readMatches(string mfn, vector<Point2f>& features1, vector<Point2f>& featur
 void readSiftMatches(string sfmfn, vector<Point2f>& features1, vector<Point2f>& features2 );
 void showMatches(Mat im1, Mat im2, vector<Point2f>& pts1, vector<Point2f>& pts2, string smfn);
 
+//read in all matches : harris, DoG, Sift
+void readAllMatches(string folder, vector<Point2f>& matchPts1, vector<Point2f>& matchPts2);
+
+
 //mean-shift
 void DrawContoursAroundSegments(vector<uchar>&	segmentedImage,	const int width, const int height, const int ch, const Scalar color);
 void DoMeanShiftSegmentation(vector<uchar> inputimg, const int width, const int height, const int ch, const int sigmaS, const float sigmaR, const int minregion, 

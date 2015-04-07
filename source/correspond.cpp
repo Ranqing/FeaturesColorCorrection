@@ -30,7 +30,7 @@ void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vect
 		}
 
 		cout << endl << idx << "th-region: perspective transform" << endl;
-		Mat persmtx  = findHomography(repts2, repts1, RANSAC);   
+		Mat persmtx  = findHomography(repts2, repts1, RANSAC);    //source, target, method
 		cout << "perspective matrix: " << endl;
 		cout << persmtx  << endl;
 

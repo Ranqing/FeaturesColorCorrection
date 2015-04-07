@@ -233,6 +233,56 @@ void readSiftMatches(string sfmfn, vector<Point2f>& features1, vector<Point2f>& 
 	cout << "read matches done. " << matchnum << " matches." << endl;
 }
 
+//read matches including preprocessing
+void readAllMatches(string folder, vector<Point2f>& matchPts1, vector<Point2f>& matchPts2)
+{
+	string fn ;
+
+	vector<Point2f> mpts1(0), mpts2(0);
+
+	fn = folder + "matches_Harris.txt";
+	readMatches(fn, mpts1, mpts2);
+
+	fn = folder + "matches_DoG.txt";
+	readMatches(fn, mpts1, mpts2);
+
+	fn = folder + "matches_Sift.txt";
+	readMatches(fn, mpts1, mpts2);
+
+	/************************************************************************/
+	/* 1. 去掉Y值不等的匹配
+	/* 2. 去掉重复的匹配
+	/************************************************************************/
+
+	matchPts1.clear();
+	matchPts2.clear();	
+		
+	int matchcnt = mpts1.size();
+	bool times[NMAX][NMAX];
+	memset(times, 0, NMAX * NMAX* sizeof(bool));
+
+	cout << "read all matches done."  << matchcnt << endl;
+	for (int i = 0; i < matchcnt; ++i )
+	{
+		int sx = mpts1[i].x;
+		int sy = mpts1[i].y;
+		int dx = mpts2[i].x;
+		int dy = mpts2[i].y;
+
+		if (abs(sy - dy) > 5)
+			continue;
+
+		if (times[sx][sy] > 0)   //不会出现一对多的情况：其实难以保证
+			continue;
+
+		matchPts1.push_back(Point2f(sx, sy));
+		matchPts2.push_back(Point2f(dx, dy));
+	}
+	matchcnt = matchPts1.size();
+	cout << "after delete duplicate matches. " << matchcnt << endl;	
+}
+
+
 void showMatches(Mat im1, Mat im2, vector<Point2f>& pts1, vector<Point2f>& pts2, string smfn)
 {
 	int h = im1.rows;

@@ -5,57 +5,6 @@
 typedef unsigned char uchar;   ///实际在WinDef.h中 unsigned char也被typedef为BYTE
 typedef unsigned int uint; 
 
-
-//read matches including preprocessing
-void readAllMatches(string folder, vector<Point2f>& matchPts1, vector<Point2f>& matchPts2)
-{
-	string fn ;
-
-	vector<Point2f> mpts1(0), mpts2(0);
-
-	fn = folder + "matches_Harris.txt";
-	readMatches(fn, mpts1, mpts2);
-
-	fn = folder + "matches_DoG.txt";
-	readMatches(fn, mpts1, mpts2);
-
-	fn = folder + "matches_Sift.txt";
-	readMatches(fn, mpts1, mpts2);
-
-	/************************************************************************/
-	/* 1. 去掉Y值不等的匹配
-	/* 2. 去掉重复的匹配
-	/************************************************************************/
-
-	matchPts1.clear();
-	matchPts2.clear();	
-		
-	int matchcnt = mpts1.size();
-	bool times[NMAX][NMAX];
-	memset(times, 0, NMAX * NMAX* sizeof(bool));
-
-	cout << "read all matches done."  << matchcnt << endl;
-	for (int i = 0; i < matchcnt; ++i )
-	{
-		int sx = mpts1[i].x;
-		int sy = mpts1[i].y;
-		int dx = mpts2[i].x;
-		int dy = mpts2[i].y;
-
-		if (abs(sy - dy) > 10)
-			continue;
-
-		if (times[sx][sy] > 0)   //不会出现一对多的情况：其实难以保证
-			continue;
-
-		matchPts1.push_back(Point2f(sx, sy));
-		matchPts2.push_back(Point2f(dx, dy));
-	}
-	matchcnt = matchPts1.size();
-	cout << "after delete duplicate matches. " << matchcnt << endl;	
-}
-
-
 void computeMatchTable( vector<Point2f> pts, vector<int> labels, int step, vector<vector<int>>& mctable, string sfn)
 {
 	for (int i = 0; i < pts.size(); ++i)
@@ -238,8 +187,9 @@ int main(int argc, char *argv[])
 	cout << "\n\tmatches\n" << endl;
 
 	vector<Point2f> sfmatchPt1(0), sfmatchPt2(0);
-	//readAllMatches(folder, sfmatchPt1, sfmatchPt2);
-	readSiftMatches(folder + "matches_sift.txt", sfmatchPt1, sfmatchPt2);
+	readAllMatches(folder, sfmatchPt1, sfmatchPt2);
+	
+	//readSiftMatches(folder + "matches_sift.txt", sfmatchPt1, sfmatchPt2);
 	//readSiftMatches(folder + "matches_sift.txt", sfmatchPt2, sfmatchPt1);   //verse
 
 
