@@ -49,6 +49,11 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 //single region color transfer
 void RegionColorTransfer(Mat im1, Mat im2, Mat remsk1, Mat remsk2,  Mat& new_reim2, string lctsfn);
 
+//implementation of ACCV2009
+void  ImageBGR2HSI(Mat RGBim, Mat& HSI_Him, Mat& HSI_Sim, Mat& HSI_Iim);
+void  ImageHSI2BGR(Mat HSI_Him, Mat HSI_Sim, Mat HSI_Iim, Mat& RGBim);
+void FeaturesColorCorrection(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable2, vector<vector<int>>& sfmatchTable, vector<Point2f>& sfmatchPt1, vector<Point2f>& sfmatchPt2, string folder, string imfn);
+
 
 
 

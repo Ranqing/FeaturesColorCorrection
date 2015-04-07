@@ -12,12 +12,13 @@ void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vect
 	
 	for (int i = 0; i < regionum2; ++i)
 	{
-		if (sfmatchTable[i].size() < 4)
+		//if (sfmatchTable[i].size() < 4)
+		if (sfmatchTable[i].size() == 0)
 		{
 			out_pixelTable1.push_back(vector<Point2f>());
 			continue;                   //can't compute a transform
 		}
-
+		
 		int idx = i;
 		int matchcnt = sfmatchTable[idx].size();      //区域内的匹配数目
 
@@ -29,15 +30,69 @@ void FindRegionMapping(Mat im1, Mat im2, vector<vector<int>>& sfmatchTable, vect
 			repts2.push_back(sfmatchPts2[tidx]);
 		}
 
-		cout << endl << idx << "th-region: perspective transform" << endl;
-		Mat persmtx  = findHomography(repts2, repts1, RANSAC);    //source, target, method
-		cout << "perspective matrix: " << endl;
-		cout << persmtx  << endl;
+		if (matchcnt == 1 || matchcnt == 2)
+		{
+			cout << endl << idx << "th-region: translation" << endl;
+			int deltax = 0;
+			for (int j = 0; j < matchcnt; ++j)
+			{
+				deltax += (repts1[j].x - repts2[j].x); 
+			}
+			deltax /= matchcnt;
+			cout << "delta x = " << deltax << endl;
 
-		cout << "apply perspective transformation matrix to pixels in " << idx << "th region." << endl; 
-		vector<Point2f> pers_pixelpts1(0);
-		cv::perspectiveTransform(pixelTable2[idx], pers_pixelpts1, persmtx);
-		out_pixelTable1.push_back(pers_pixelpts1);
+			//对应的点
+			vector<Point2f> pixelpts1(0);
+			for (int k = 0; k < pixelTable2[idx].size(); ++k)
+			{
+				Point2f pt = pixelTable2[idx][k];
+				Point2f newpt = Point2f(pt.x + deltax, pt.y);
+				pixelpts1.push_back(newpt);
+			}
+
+			out_pixelTable1.push_back(pixelpts1);
+		}
+
+		else if (matchcnt == 3)
+		{
+			//affine transform
+			if (idx == 48)
+			{
+				getchar();
+				cout << matchcnt  << endl;
+				cout << repts2[0]  << ' ' << repts1[0] << endl;
+				cout << repts2[1]  << ' ' << repts1[1] << endl;
+				cout << repts2[2]  << ' ' << repts1[2] << endl;
+			}
+			cout << endl << idx << "th-region: affine transform" << endl;
+			
+			Mat affinemtx = estimateRigidTransform(repts2, repts1, true);
+			
+			cout << "affine matrix: " << endl;
+			cout << affinemtx << endl;
+			cout << "apply affine transformation matrix to pixel in " << idx << "th region." << endl;
+			
+			vector<Point2f> aff_pixelpts1(0);
+			cv::transform(pixelTable2[idx], aff_pixelpts1, affinemtx);
+			
+			out_pixelTable1.push_back(aff_pixelpts1);
+		}
+
+		else if (matchcnt >= 4)
+		{
+			cout << endl << idx << "th-region: perspective transform" << endl;
+			
+			Mat persmtx  = findHomography(repts2, repts1, RANSAC);    //source, target, method
+			
+			cout << "perspective matrix: " << endl;
+			cout << persmtx  << endl;
+			cout << "apply perspective transformation matrix to pixels in " << idx << "th region." << endl; 
+
+			vector<Point2f> pers_pixelpts1(0);
+			cv::perspectiveTransform(pixelTable2[idx], pers_pixelpts1, persmtx);
+			
+			out_pixelTable1.push_back(pers_pixelpts1);
+		}
 
 		Mat remsk1, remsk2;
 		maskFromPixels(out_pixelTable1[idx], height, width, remsk1);

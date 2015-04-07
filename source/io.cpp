@@ -274,9 +274,10 @@ void readAllMatches(string folder, vector<Point2f>& matchPts1, vector<Point2f>& 
 
 		if (times[sx][sy] > 0)   //不会出现一对多的情况：其实难以保证
 			continue;
-
+		
 		matchPts1.push_back(Point2f(sx, sy));
 		matchPts2.push_back(Point2f(dx, dy));
+		times[sx][sy] = 1;
 	}
 	matchcnt = matchPts1.size();
 	cout << "after delete duplicate matches. " << matchcnt << endl;	

@@ -181,6 +181,11 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 				double weightL = exp(-0.5 *  (color.val[0] - means2[i].val[0]) * (color.val[0] - means2[i].val[0]) / alpha2 );
 				double weightA = exp(-0.5 *  (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]) / alpha2 );
 				double weightB = exp(-0.5 *  (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]) / alpha2 );
+
+				//-3*x*x
+				/*double weightL = exp(-3 *  (color.val[0] - means2[i].val[0]) * (color.val[0] - means2[i].val[0]));
+				double weightA = exp(-3 *  (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]));
+				double weightB = exp(-3 *  (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]));*/
 		
 				weightLsum += weightL;
 				weightAsum += weightA;
@@ -209,8 +214,8 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 	savefn = folder + "lct_weighted_" + imfn + ".jpg";   //local_weighted_view5E.jpg， 只考虑有匹配的区域进行加权平均（本文的思路）
 	cout << "save " << savefn << endl;
 	/*imshow("newim2", newim2);
-	waitKey(0);
-	destroyWindow("newim2");*/
+	  waitKey(0);
+	  destroyWindow("newim2");*/
 	imwrite(savefn, newim2);	
 #endif
 	
@@ -247,8 +252,8 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 	savefn = folder + "lct_" + imfn + ".jpg";      //lct_view5E.jpg:  有匹配的区域的一对一变换
 	cout << "save " << savefn << endl;
 	/*imshow("newim2", newim2);
-	waitKey(0);
-	destroyWindow("newim2");*/
+      waitKey(0);
+	  destroyWindow("newim2");*/
 	imwrite(savefn, newim2);
 	
 	cout << endl << "/*******************weighted local color transfer done******************/" << endl;
@@ -336,6 +341,11 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 				double weightA = exp(-0.5 *  (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]) / alpha2 );
 				double weightB = exp(-0.5 *  (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]) / alpha2 );
 
+				//-3*x*x
+				/*double weightL = exp(-3 *  (color.val[0] - means2[i].val[0]) * (color.val[0] - means2[i].val[0]));
+				  double weightA = exp(-3 *  (color.val[1] - means2[i].val[1]) * (color.val[1] - means2[i].val[1]));
+				  double weightB = exp(-3 *  (color.val[2] - means2[i].val[2]) * (color.val[2] - means2[i].val[2]));*/
+
 				weightLsum += weightL;
 				weightAsum += weightA;
 				weightBsum += weightB;
@@ -417,9 +427,6 @@ void computeCIMs(Mat labim, int regionum, vector<Scalar> means, vector<vector<Po
 	float alpha2 = alpha * alpha;
 	for (int i = 0; i < regionum; ++ i)
 	{
-		if (pixeltable[i].size() < 1000)
-			continue;
-
 		Scalar imean = means[i];
 		Mat cimL(h,w,CV_32FC1);
 		Mat cimA(h,w,CV_32FC1);

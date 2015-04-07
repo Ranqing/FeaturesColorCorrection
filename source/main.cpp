@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 		cout << "failed to open " << imfn1 << " or " << imfn2 << endl;
 		return -1;
 	}
-
+	
 	//global transfer的结果
 	Mat gct_newim2;
 	GlobalColorTransfer(im1, im2, gct_newim2);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
 	Mat segmat2;
 
-//#define  RQ_DEBUG
+#define  RQ_DEBUG
 #ifdef   RQ_DEBUG
 	//直接读入分割结果
 	string segfn = folder + "seg_" + argv[3] + ".jpg";    //save segmentation image
@@ -283,6 +283,15 @@ int main(int argc, char *argv[])
 	cout << "sift matches: " << sfthreecnt << " regions have less three matches." << endl;
 	cout << "save matches in each regions done." << endl;
 
+	
+	//---------------------------------------------------------------------------------------------------------//
+	//---------------------------------------ACCV2009----------------------------------------------------------//
+	cout << "result of ACCV2009" << endl;
+	FeaturesColorCorrection(im1, im2, pixelTable2, sfmatchTable, sfmatchPt1, sfmatchPt2, folder, argv[3]);
+	return 1;
+	//---------------------------------------------------------------------------------------------------------//
+
+
 	//---------------------------------------------------------------------------------------------------------//
 	//--------------测试区域的透视变换以及颜色转移：用第68个区域-人像区域---------------------//
 	//包含每个区域的perspective mask, perspective region
@@ -310,6 +319,13 @@ int main(int argc, char *argv[])
 	FindRegionMapping(im1, im2, sfmatchTable, sfmatchPt1, sfmatchPt2, pixelTable2, pixelTable1, outfolder);		
 
 	cout << endl << "/*******************weighted local color transfer******************/" << endl;
+	cout << endl << "global : ";
+	cout << global_means1 << " " << global_stddvs1 << endl;
+	cout << global_means2 << " " << global_stddvs2 << endl;
+	cout << global_means1.val[0] / global_means2.val[0] << ' ';
+	cout << global_means1.val[1] / global_means2.val[1] << ' ';
+	cout << global_means1.val[2] / global_means2.val[2] << ' '; cout << endl;
+
 	LocalColorTransfer(im1, im2, pixelTable1, pixelTable2, outfolder, argv[3]);
 	LocalColorTransfer2(im1, im2, pixelTable1, pixelTable2, outfolder, argv[3]);
 	
