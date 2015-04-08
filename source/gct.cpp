@@ -54,7 +54,7 @@ void ColorTransfer(Mat lab_srcim, Mat lab_dstim, Mat srcmsk, Mat dstmsk, Mat& la
 	destroyWindow("lab_newdst");*/
 }
 
-void GlobalColorTransfer(Mat srcim, Mat dstim, Mat& gct_dstim)
+void GlobalColorTransfer(Mat srcim, Mat dstim, Mat& gct_dstim, string savefn)
 {
 	Mat lab_srcim, lab_dstim;
 	cvtColor(srcim, lab_srcim, CV_BGR2Lab);
@@ -68,4 +68,10 @@ void GlobalColorTransfer(Mat srcim, Mat dstim, Mat& gct_dstim)
 
 	gct_dstim = dstim.clone();
 	cvtColor(lab_newdstim, gct_dstim, CV_Lab2BGR);	
+
+	if (savefn != "")
+	{
+		cout << savefn << endl;
+		imwrite(savefn, gct_dstim);
+	}
 }

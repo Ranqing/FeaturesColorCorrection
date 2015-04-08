@@ -135,9 +135,9 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 	}
 
 	//保存每个匹配区域的means, stddvs
-	string fn1 = folder + "means_stddvs_1.txt";
-	string fn2 = folder + "means_stddvs_2.txt";
-	string factorfn = folder + "lab_factors.txt";
+	string fn1 = folder + "/means_stddvs_1.txt";
+	string fn2 = folder + "/means_stddvs_2.txt";
+	string factorfn = folder + "/lab_factors.txt";
 			
 	fstream fout1(fn1, ios::out); fout1 << matchedRegionsIdx.size() << endl;
 	fstream fout2(fn2, ios::out); fout2 << matchedRegionsIdx.size() << endl;
@@ -210,13 +210,15 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 	}
 		
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-		
-	savefn = folder + "lct_weighted_" + imfn + ".jpg";   //local_weighted_view5E.jpg， 只考虑有匹配的区域进行加权平均（本文的思路）
-	cout << "save " << savefn << endl;
 	/*imshow("newim2", newim2);
-	  waitKey(0);
-	  destroyWindow("newim2");*/
+	waitKey(0);	destroyWindow("newim2");*/
+		
+	savefn = folder + "/weighted_lct_" + imfn + ".png";   //weighted_local_view5E.jpg， 只考虑有匹配的区域进行加权平均（本文的思路）
 	imwrite(savefn, newim2);	
+	
+	//cout << endl << "/*******************weighted: only mapped region******************/" << endl;
+	cout << "save " << savefn << endl;
+
 #endif
 	
 	lab_newim2 = Mat::zeros(height, width, CV_8UC3);
@@ -249,14 +251,15 @@ void LocalColorTransfer(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1, 
 	}
 
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-	savefn = folder + "lct_" + imfn + ".jpg";      //lct_view5E.jpg:  有匹配的区域的一对一变换
-	cout << "save " << savefn << endl;
 	/*imshow("newim2", newim2);
-      waitKey(0);
-	  destroyWindow("newim2");*/
+	waitKey(0);
+	destroyWindow("newim2");*/
+		
+	savefn = folder + "/lct_" + imfn + ".png";      //lct_view5E.jpg:  有匹配的区域的一对一变换
 	imwrite(savefn, newim2);
-	
-	cout << endl << "/*******************weighted local color transfer done******************/" << endl;
+
+	//cout << endl << "/*******************no weighted******************/" << endl;
+	cout << "save " << savefn << endl;
 }
 
 //每个区域都有均值和标准差，无匹配区域使用global的值
@@ -273,6 +276,14 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 	cvtColor(im2, labim2, CV_BGR2Lab);
 	meanStdDev(labim1, global_mean1, global_stddv1);
 	meanStdDev(labim2, global_mean2, global_stddv2);
+
+	cout << endl << "global : ";
+	cout << global_mean1 << " " << global_stddv1 << endl;
+	cout << global_mean2 << " " << global_stddv2 << endl;
+	cout << global_mean1.val[0] / global_mean2.val[0] << ' ';
+	cout << global_mean1.val[1] / global_mean2.val[1] << ' ';
+	cout << global_mean1.val[2] / global_mean2.val[2] << ' '; cout << endl << endl;
+
 
 	int regionum = pixelTable1.size();
 	vector<Scalar> means1(0), means2(0), stddvs1(0), stddvs2(0);    // 匹配区域的均值和标准差
@@ -369,13 +380,16 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 	}
 
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-
-	savefn = folder + "lct_weighted_" + imfn + "_2.jpg";       //lct_weighted_view5E_2.jpg ：  所有区域的加权平均，无匹配区域使用global_means, global_stddvs 
-	cout << "save " << savefn << endl;
 	/*imshow("newim2", newim2);
 	waitKey(0);
 	destroyWindow("newim2");*/
+
+	savefn = folder + "/weighted_lct_" + imfn + "_2.png";       //lct_weighted_view5E_2.jpg ：  所有区域的加权平均，无匹配区域使用global_means, global_stddvs 
 	imwrite(savefn, newim2);	
+
+	//cout << endl << "/*******************weighted: mapped regions and global******************/" << endl;
+	cout << "save " << savefn << endl;	
+	
 #endif
 
 	lab_newim2 = Mat::zeros(height, width, CV_8UC3);
@@ -406,12 +420,15 @@ void LocalColorTransfer2(Mat im1, Mat im2, vector<vector<Point2f>>& pixelTable1,
 	}
 
 	cvtColor(lab_newim2, newim2, CV_Lab2BGR);
-	savefn = folder + "lct_" + imfn + "_2.jpg";           //lct_view5E_2.jpg ： 所有区域的一对一变换
-	cout << "save " << savefn << endl;
 	/*imshow("newim2", newim2);
 	waitKey(0);
 	destroyWindow("newim2");*/
+
+	savefn = folder + "/lct_" + imfn + "_2.png";           //lct_view5E_2.jpg ： 所有区域的一对一变换
 	imwrite(savefn, newim2);
+
+	//cout << endl << "/*******************no weighted******************/" << endl;
+	cout << "save " << savefn << endl;
 }
 
 

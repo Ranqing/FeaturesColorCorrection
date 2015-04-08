@@ -100,6 +100,7 @@ void DoMeanShiftSegmentation(vector<uchar> inputimg, const int width, const int 
  * @param segments	    vector<uchar> where the segmentation results will be written in
  * @param regioncnt	    Number of different labels
  */
+// new 
 void DoMeanShiftSegmentation(const Mat& src, int sigmaS, float sigmaR, int minR, vector<uchar>& segments, vector<int>& labels, int& regioncnt)
 {
 	msImageProcessor proc;

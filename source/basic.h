@@ -6,7 +6,7 @@
 #include "common.h"
 
 #define _PI 3.14159265358979323846
-#define NMAX 1500
+#define NMAX 3000
 
 //pixels vector convert to mat
 template<typename PixelType> 
@@ -140,5 +140,10 @@ void mul(const cv::Mat mtx, const cv::Vec4f a, cv::Vec4f& ret);
 
 //生成随机颜色
 Scalar randomColor(RNG& rng);
+
+//获取当前目录
+//char pwd[1024];
+//_getcwd(pwd, 1021);
+//cout << pwd << endl;
 
 #endif

@@ -230,7 +230,7 @@ void readSiftMatches(string sfmfn, vector<Point2f>& features1, vector<Point2f>& 
 	}
 	fin.close();
 
-	cout << "read matches done. " << matchnum << " matches." << endl;
+	//cout << "read matches done. " << matchnum << " matches." << endl;
 }
 
 //read matches including preprocessing
@@ -258,7 +258,10 @@ void readAllMatches(string folder, vector<Point2f>& matchPts1, vector<Point2f>& 
 	matchPts2.clear();	
 		
 	int matchcnt = mpts1.size();
-	bool times[NMAX][NMAX];
+
+	//‘⁄∂—…œ∑÷≈‰
+	bool *times_arr = new bool[NMAX * NMAX];
+	bool (*times)[NMAX] = (bool(*)[NMAX])times_arr;
 	memset(times, 0, NMAX * NMAX* sizeof(bool));
 
 	cout << "read all matches done."  << matchcnt << endl;

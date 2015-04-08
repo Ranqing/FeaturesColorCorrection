@@ -5,6 +5,22 @@
 typedef unsigned char uchar;   ///实际在WinDef.h中 unsigned char也被typedef为BYTE
 typedef unsigned int uint; 
 
+void ComputeRegionMatches(vector<int> labels2, int regionum2, int step, vector<Point2f> features1, vector<Point2f> features2, vector<vector<Point2f>>& matches1, vector<vector<Point2f>>& matches2)
+{
+	matches1.resize(regionum2);
+	matches2.resize(regionum2);
+
+	for (int i = 0; i < features2.size(); ++i)
+	{
+		Point2f pt2 = features2[i];
+		Point2f pt1 = features1[i];
+
+		int idx  = labels2[pt2.y * step + pt2.x];
+		matches1[idx].push_back(pt1);
+		matches2[idx].push_back(pt2);
+	}
+}
+
 void computeMatchTable( vector<Point2f> pts, vector<int> labels, int step, vector<vector<int>>& mctable, string sfn)
 {
 	for (int i = 0; i < pts.size(); ++i)
@@ -45,17 +61,24 @@ void computeMatchTable( vector<Point2f> pts, vector<int> labels, int step, vecto
 
 int main(int argc, char *argv[])
 {
-	if (argc != 4)
+	if (argc != 5)
 	{
 		/*运行程序，图像数据目录，原图像，目标图像，ms算法分割参数*/
-		cout << "Usage: MSLibrary.exe folder imfn1 imfn2" << endl;
+		cout << "Usage: MSLibrary.exe folder imfn1 imfn2 outfolder" << endl;
 		return 1;
 	}
 
 	string folder = argv[1];						// D:/RQRunning/Meanshift/Data/art/
 	string imfn1 = folder + argv[2] + ".png";		// D:/RQRunning/Meanshift/Data/art/ + view1.png
 	string imfn2 = folder + argv[3] + ".png";		// D:/RQRunning/Meanshift/Data/art/ + view5.png
-	//int h = string2type<int>(string(argv[4]));
+	
+	string outfolder = "../output";
+	_mkdir(outfolder.c_str());
+	outfolder = outfolder + "/" + argv[4];
+	_mkdir(outfolder.c_str());
+
+
+	//算法部分
 
 	Mat im1 = imread(imfn1, 1);
 	Mat im2 = imread(imfn2, 1);
@@ -65,10 +88,18 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	
-	//global transfer的结果
-	Mat gct_newim2;
-	GlobalColorTransfer(im1, im2, gct_newim2);
-	imwrite(folder+"gct_view5E.png", gct_newim2);
+	//---------------------------------------------------------------------------------------------------------//
+	//---------------------------------------Global Color Transfer---------------------------------------------//
+		Mat gct_newim2;
+		GlobalColorTransfer(im1, im2, gct_newim2, outfolder + "/gct_view5E.png");
+	//---------------------------------------------------------------------------------------------------------//
+
+	//---------------------------------------------------------------------------------------------------------//
+	//---------------------------------------ACCV2009----------------------------------------------------------//
+	//见accv2009
+	//cout << "result of ACCV2009" << endl;
+	//FeaturesColorCorrection(im1, im2, pixelTable2, sfmatchTable, sfmatchPt1, sfmatchPt2, folder, argv[3]);
+	//---------------------------------------------------------------------------------------------------------//
 	
 	int width = im1.cols;
 	int height = im1.rows;
@@ -80,32 +111,28 @@ int main(int argc, char *argv[])
 	Mat2PixelsVector<uchar>(im2, imvec2);
 
 
-	//1. 对target image进行分割
+	//分割: meanshift
 	vector<uchar> segim2(0); 
 	vector<uchar> segbound2(0);
 	vector<int> seglabels2(0);
-	int regionum2;
-
-	//float sigmaS = 2*h+1;                          //spatial radius
-	//float sigmaR = 2*h;                            //color radius
-	//const int minR = 20;                           //min regions
-
-	float sigmaS = 5;
-	float sigmaR = 10;
-	const int minR = 800;
-
-	//对target image进行分割
-	cout << "start mean-shift segmentation." << endl;
-	cout << "spatial radius = " << sigmaS << endl;
-	cout << "color radius = " << sigmaR << endl;
+	vector<vector<Point2f>> pixelTable2(0);
 
 	Mat segmat2;
+	int regionum2;
 
-#define  RQ_DEBUG
+	//float sigmaS = 2*h;
+	//float sigmaR = 2*h+1;
+	//const int minR = 20;
+
+	float sigmaS = 5;                   //spatial radius
+	float sigmaR = 10;                  //color radius
+	const int minR = 800;               //min regions
+
+//#define  RQ_DEBUG
 #ifdef   RQ_DEBUG
 	//直接读入分割结果
-	string segfn = folder + "seg_" + argv[3] + ".jpg";    //save segmentation image
-	string lbfn  = folder + "label_" + argv[3] + ".txt";   //save segmentation labels
+	string segfn = outfolder + "/seg_" + argv[3] + ".jpg";    //save segmentation image
+	string lbfn  = outfolder + "/label_" + argv[3] + ".txt";   //save segmentation labels
 	
 	segmat2 = imread(segfn);
 	if (segmat2.data == NULL)
@@ -119,11 +146,24 @@ int main(int argc, char *argv[])
 	cout << "read target image labels done."  << endl;
 	cout << "load target image segmentation result done." << endl;
 	
-	cout << "width = " << width << endl;
+	cout << "width = " << width <<  endl;
 	cout << "height = " << height << endl;
 	cout << "regionum = " << regionum2 << endl;
+
+	//计算区域像素表 
+	pixelTable2.resize(regionum2);
+	for(int i = 0; i < seglabels2.size(); ++i)
+	{
+		Point2f pt(i%width, i/width);	
+		pixelTable2[seglabels2[i]].push_back(pt);
+	}
 #else
 	//进行mean-shift分割
+	cout << "start mean-shift segmentation." << endl;
+	cout << "spatial radius = " << sigmaS << endl;
+	cout << "color radius = " << sigmaR << endl;
+	cout << "min region = " << minR << endl;
+	
 	DoMeanShiftSegmentation(im2, sigmaS, sigmaR, minR, segim2, seglabels2, regionum2);
 	DrawContoursAroundSegments(segim2, width, height, ch,  cv::Scalar(255,255,255));
 
@@ -131,8 +171,8 @@ int main(int argc, char *argv[])
 	cout << argv[3] << " - " << regionum2 << " regions." << endl;
 
 	//save segmentation results
-	string segfn = folder + "seg_" + argv[3] + ".jpg";    //save segmentation image
-	string lbfn = folder + "label_" + argv[3] + ".txt";   //save segmentation labels
+	string segfn = outfolder + "/seg_" + argv[3] + ".jpg";    //save segmentation image
+	string lbfn  = outfolder + "/label_" + argv[3] + ".txt";   //save segmentation labels
 
 	if ( segim2.size() == 0 )
 	{
@@ -140,158 +180,116 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	//Mat segmat2;	
+	//保存分割的标签分配结果
+	saveLabels(seglabels2, width, height, lbfn);
+
+	//保存分割的图像结果
 	PixelsVector2Mat(segim2, width, height, ch, segmat2);
 	imwrite(segfn, segmat2);
-
-	if (seglabels2.size() == 0)
-	{
-		cout << "wrong in get labels";
-		return -1;
-
-	}	
-	saveLabels(seglabels2, width, height, lbfn);
-#endif
-
-	//每个区域的像素
-	vector<vector<Point2f>> pixelTable2(regionum2);
+	
+	//计算每个区域的像素表 
+	pixelTable2.resize(regionum2);
 	for(int i = 0; i < seglabels2.size(); ++i)
 	{
 		Point2f pt(i%width, i/width);	
 		pixelTable2[seglabels2[i]].push_back(pt);
 	}
-	
-	//保存分割结果
-	string mskfolder = folder + "masks_" + argv[3];
-	string regionfolder = folder + "regions_" + argv[3];
+
+	//保存每个区域图像和对应mask
+	string mskfolder = outfolder + "/masks_" + argv[3];
+	string regionfolder = outfolder + "/regions_" + argv[3];
 	_mkdir(mskfolder.c_str());
 	_mkdir(regionfolder.c_str());
 
 	for (int i = 0; i < pixelTable2.size(); ++i)
 	{
-		//保存每个区域的mask
 		string mskfn =  mskfolder + "/mask_" +  type2string<int>(i) + ".jpg";
 		Mat msk;
 		maskFromPixels(pixelTable2[i], height, width, msk);
 		imwrite(mskfn, msk);
-	
-		//保存分割后的每个区域
+
 		string resfn = regionfolder + "/region_" + type2string<int>(i) + "_" + argv[3] + ".jpg";
 		Mat reim2 ;
 		im2.copyTo(reim2, msk);
 		imwrite(resfn, reim2);		
 	}
-	
-	
-	//读入匹配
+#endif
+		
+	//区域内特征匹配 -> 区域内像素对应
 	cout << "\n\tmatches\n" << endl;
 
-	vector<Point2f> sfmatchPt1(0), sfmatchPt2(0);
-	readAllMatches(folder, sfmatchPt1, sfmatchPt2);
+	vector<Point2f> matchPts1(0), matchPts2(0);
+	readAllMatches(folder, matchPts1, matchPts2);
 	
-	//readSiftMatches(folder + "matches_sift.txt", sfmatchPt1, sfmatchPt2);
-	//readSiftMatches(folder + "matches_sift.txt", sfmatchPt2, sfmatchPt1);   //verse
-
-
-	string sfn1 = folder + "valid_" + argv[2] + ".jpg";
-	string sfn2 = folder + "valid_" + argv[3] + ".jpg";
-	string segsfn2 = folder + "valid_seg_" + argv[3] + ".jpg";
-	showFeatures(im1, sfmatchPt1, cv::Scalar(0,0,255), sfn1);
-	showFeatures(im2, sfmatchPt2, cv::Scalar(0,0,255), sfn2);
-	showFeatures(segmat2, sfmatchPt2, cv::Scalar(0,0,255), segsfn2 );
+	string sfn1 = outfolder + "/features_" + argv[2] + ".jpg";
+	string sfn2 = outfolder + "/features_" + argv[3] + ".jpg";
+	string segsfn2 = outfolder  + "/features_seg_" + argv[3] + ".jpg";
+	showFeatures(im1, matchPts1, cv::Scalar(0,0,255), sfn1);
+	showFeatures(im2, matchPts2, cv::Scalar(0,0,255), sfn2);
+	showFeatures(segmat2, matchPts1, cv::Scalar(0,0,255), segsfn2 );
 	cout << endl;
-
 	
-	//将匹配分配到对应的区域，存储匹配的下标
-	//compute match table
-	vector<vector<int>> sfmatchTable(regionum2);
-	computeMatchTable(sfmatchPt2, seglabels2, width, sfmatchTable, "");	
-		
-	string smcntfn = folder + "regions_matches.txt";     //保存每个区域的像素数目, 匹配点数目, 匹配点下标
-	fstream fout(smcntfn , ios::out);
-	if (fout.is_open() == NULL)
+	//每个区域的有那些匹配
+	vector<vector<Point2f>> matchTable1(0), matchTable2(0);
+	ComputeRegionMatches(seglabels2, regionum2, width, matchPts1, matchPts2, matchTable1, matchTable2 );
+
+	string mtfn = outfolder + "/regions_matches.txt";
+	fstream fout(mtfn.c_str(), ios::out);
+	if (fout.is_open() == false)
 	{
-		cout << "failed to open " << smcntfn << endl;
+		cout << "failed to open " << mtfn << endl;
 		return -1;
 	}
 	fout << regionum2 << endl;
-		
-	//统计无匹配区域数目
 	
-	int sfzerocnt = 0;                    //区域内无匹配
-	int sfonecnt  = 0;                    //区域内有至少一个匹配
-	int sfthreecnt = 0;	                  //区域内有至少三个匹配
-	for (int i = 0; i < regionum2; ++i)
+	int zerocnt = 0;     //区域内无匹配
+	int onecnt  = 0;     //区域内有至少一个匹配
+	int threecnt = 0;    //区域内至少三个匹配
+	for (int i = 0; i < regionum2; ++i )
 	{
-		string mskfn = mskfolder + "/mask_" +  type2string<int>(i) + ".jpg";
-		Mat msk = imread(mskfn);
-		if (msk.data == NULL)
-		{
-			cout << "failed to open " << mskfn << endl;
-			return -1;
-		}
-		Mat graymsk, binarymsk;
-		cv::cvtColor(msk, graymsk, CV_BGR2GRAY);
-		cv::threshold(graymsk, binarymsk, 125, 255, CV_THRESH_BINARY);
-							
-		int pixelcnt = countNonZero(binarymsk);
-		int matchcnt = sfmatchTable[i].size();
-		
-		fout << pixelcnt << ' ' << matchcnt << ' ';	
-		
-		if (matchcnt == 0)      sfzerocnt ++;
-		if (matchcnt >= 1)		sfonecnt ++;
-		if (matchcnt >= 3)  	sfthreecnt ++;
+		Mat msk;
+		maskFromPixels(pixelTable2[i], height, width, msk);
 
-		for (int j = 0; j < matchcnt; ++j)
-			fout << sfmatchTable[i][j] << ' ';
-		fout << endl;	
+		int pixelcnt = countNonZero(msk);
+		int matchcnt = matchTable2[i].size();
 
-		//显示保存每个区域内的匹配点
+		fout << i << "th region: "<< pixelcnt << "pixels  " << matchcnt << " matches." << endl  ;
+		if (matchcnt == 0)     zerocnt ++;
+		if (matchcnt >= 1)	   onecnt ++;
+		if (matchcnt >= 3)     threecnt ++;
+
 #define SHOW_REGION
 #ifdef  SHOW_REGION
-		Mat newim2 = Mat::zeros(height, width, CV_8UC3) ;
-		im2.copyTo(newim2, binarymsk);
-		
+
+		Mat tmp(height, width, CV_8UC3);
+		im2.copyTo(tmp, msk);
+
 		Mat canvas(height, width * 2, CV_8UC3);
 		im1.copyTo(canvas(Rect(0,0,width,height)));
-		newim2.copyTo(canvas(Rect(width,0,width,height)));
+		tmp.copyTo(canvas(Rect(width,0,width,height)));
 
-		string validfolder = folder + "valid_region_matches";
-		_mkdir(validfolder.c_str());
+		string tmpfolder = outfolder + "/regions_matches";
+		_mkdir(tmpfolder.c_str());
 
-		string tempsfn = validfolder + "/regions_matches_" + type2string(i) + ".jpg";
+		string tempsfn = tmpfolder + "/matches_" + type2string(i) + ".jpg";
 
-		//加上匹配点
+		//显示匹配点
 		for (int j = 0; j < matchcnt; ++j)
-		{
-			int ptidx = sfmatchTable[i][j];
-			Point2i pt1 = Point2i(sfmatchPt1[ptidx].x , sfmatchPt1[ptidx].y);
-			Point2i pt2 = Point2i(sfmatchPt2[ptidx].x + width, sfmatchPt2[ptidx].y);
+		{			
+			Point2i pt1 = Point2i(matchTable1[i][j].x , matchTable1[i][j].y);
+			Point2i pt2 = Point2i(matchTable2[i][j].x + width, matchTable2[i][j].y);
 
 			cv::line(canvas, pt1, pt2, cv::Scalar(0, 255, 0));
 			cv::circle(canvas, pt1, 5, cv::Scalar(255, 0, 0));
-			cv::circle(canvas, pt2, 5, cv::Scalar(255,0,0));
+			cv::circle(canvas, pt2, 5, cv::Scalar(255, 0, 0));
 		}
-
 		imwrite(tempsfn, canvas);
 #endif		
 	}
-
-	cout << "sift matches: " << sfzerocnt << " regions have no matches." << endl;
-	cout << "sift matches: " << sfonecnt  << " regions have less one matches." << endl;
-	cout << "sift matches: " << sfthreecnt << " regions have less three matches." << endl;
 	cout << "save matches in each regions done." << endl;
-
-	
-	//---------------------------------------------------------------------------------------------------------//
-	//---------------------------------------ACCV2009----------------------------------------------------------//
-	//见accv2009
-	/*cout << "result of ACCV2009" << endl;
-	FeaturesColorCorrection(im1, im2, pixelTable2, sfmatchTable, sfmatchPt1, sfmatchPt2, folder, argv[3]);
-	return 1;*/
-	//---------------------------------------------------------------------------------------------------------//
-
+	cout << "sift matches: " << zerocnt << " regions have no matches." << endl;
+	cout << "sift matches: " << onecnt  << " regions have less one matches." << endl;
+	cout << "sift matches: " << threecnt << " regions have less three matches." << endl;
 
 	//---------------------------------------------------------------------------------------------------------//
 	//--------------测试区域的透视变换以及颜色转移：用第68个区域-人像区域---------------------//
@@ -302,34 +300,26 @@ int main(int argc, char *argv[])
 	//testTransform(idx, im1, im2, pixelTable2, sfmatchTable, sfmatchPt1, sfmatchPt2, cor_pixels1, cor_mask1 );
 	//return 11;
 	//---------------------------------------------------------------------------------------------------------//
-	
-	Mat labim1, labim2;
-	cvtColor(im1, labim1, CV_BGR2Lab);
-	cvtColor(im2, labim2, CV_BGR2Lab);
 
-	Scalar global_means1, global_stddvs1, global_means2, global_stddvs2;
-	meanStdDev(labim1, global_means1, global_stddvs1);
-	meanStdDev(labim2, global_means2, global_stddvs2);
-	
+
 	cout << endl << "/******************find regions correspondence******************/" << endl;
-	
-	string outfolder = folder + "output/";
-	_mkdir(outfolder.c_str());
+	string tmpfolder = outfolder + "/regions_map";
+	_mkdir(tmpfolder.c_str());
 
-	vector<vector<Point2f>> pixelTable1(0);	
-	FindRegionMapping(im1, im2, sfmatchTable, sfmatchPt1, sfmatchPt2, pixelTable2, pixelTable1, outfolder);		
+	vector<vector<Point2f>> pixelTable1(0);
+	FindRegionMapping(im1, im2, matchTable2, matchTable1, pixelTable2, pixelTable1, tmpfolder);
 
-	cout << endl << "/*******************weighted local color transfer******************/" << endl;
-	cout << endl << "global : ";
-	cout << global_means1 << " " << global_stddvs1 << endl;
-	cout << global_means2 << " " << global_stddvs2 << endl;
-	cout << global_means1.val[0] / global_means2.val[0] << ' ';
-	cout << global_means1.val[1] / global_means2.val[1] << ' ';
-	cout << global_means1.val[2] / global_means2.val[2] << ' '; cout << endl;
-
+	cout << endl << "/******************region color correction*********************/" << endl;
 	LocalColorTransfer(im1, im2, pixelTable1, pixelTable2, outfolder, argv[3]);
+
+	cout << endl << "/************region color correction: use of global************/" << endl;
 	LocalColorTransfer2(im1, im2, pixelTable1, pixelTable2, outfolder, argv[3]);
-	
+
+	//衡量两幅图的相似性
+
+
+
+
 	cout << "done" << endl;
 	return 1;
 }
