@@ -26,7 +26,7 @@ void readLabels(string lbfn, int& w, int& h, int& regionum, vector<int>& labels)
 
 void saveLabels(vector<int> labels, int w, int h, string lbfn)
 {
-	ofstream fout(lbfn.c_str(), ios::out);
+	fstream fout(lbfn.c_str(), ios::out);
 	if (fout.is_open() == false)
 	{
 		cout << "failed to write " << lbfn << endl;
